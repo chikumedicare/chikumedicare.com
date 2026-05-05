@@ -1,4 +1,5 @@
 {
+  "cleanUrls": true,
   "rewrites": [
     { "source": "/about", "destination": "/about/index.html" },
     { "source": "/career", "destination": "/career/index.html" },

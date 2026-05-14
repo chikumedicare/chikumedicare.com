@@ -1,0 +1,25 @@
+{
+  "name": "chiku_website",
+  "version": "1.0.0",
+  "description": "",
+  "main": "optimize.js",
+  "scripts": {
+    "optimize": "node optimize.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chikumedicare/chikumedicare.com.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/chikumedicare/chikumedicare.com/issues"
+  },
+  "homepage": "https://github.com/chikumedicare/chikumedicare.com#readme",
+  "dependencies": {
+    "sharp": "^0.34.5"
+  }
+}

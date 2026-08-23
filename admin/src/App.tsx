@@ -119,7 +119,7 @@ export default function App() {
       )}
       <aside className={'sidebar ' + (collapsed ? 'collapsed' : '') + (mobileMenuOpen ? ' mobile-open' : '')}>
         <div className="brand">
-          <div className="logo">C</div>
+          <img src="/logo.png" alt="Chiku Medicare Logo" className="logo-img" />
           {!collapsed && (
             <div>
               <strong>CHIKU MEDICARE</strong>

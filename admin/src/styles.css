@@ -932,3 +932,22 @@ header h1 {
   .table table { min-width: 700px !important; }
   .table td, .table th { padding: 10px 12px !important; font-size: 11px !important; }
 }
+
+/* Brand Logo Image Styles */
+.logo-img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+}
+
+.header-logo-img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.08));
+}

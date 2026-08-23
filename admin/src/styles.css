@@ -824,3 +824,111 @@ header h1 {
     font-size: 11px !important;
   }
 }
+
+/* ========================================================================== */
+/* 💻📱 3-TIER MULTI-DEVICE RESPONSIVE BREAKPOINTS (PC + TAB + MOBILE) */
+/* ========================================================================== */
+
+/* 💻 1. PC / DESKTOP (1200px and above) */
+@media (min-width: 1200px) {
+  .stats, .grid4 { grid-template-columns: repeat(4, 1fr) !important; }
+  .grid2, .formGrid { grid-template-columns: repeat(2, 1fr) !important; }
+  .content { padding: 32px 36px 60px !important; }
+}
+
+/* 📑 2. TABLET / IPAD BREAKPOINT (768px to 1199px) */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .sidebar { width: 220px !important; }
+  .sidebar.collapsed { width: 78px !important; }
+  .main { margin-left: 220px !important; }
+  .main.wide { margin-left: 78px !important; }
+  
+  header { padding: 0 24px !important; height: 70px !important; }
+  .content { padding: 24px 24px 48px !important; }
+  
+  .stats, .grid4 { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
+  .grid2, .formGrid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px !important; }
+  
+  .toolbar { flex-wrap: wrap !important; gap: 10px !important; }
+  .toolbar input { flex: 1 1 240px !important; }
+  .toolbar select { flex: 1 1 150px !important; }
+  
+  .mobile-hamburger-btn { display: none !important; }
+}
+
+/* 📱 3. MOBILE SMARTPHONE BREAKPOINT (767px and below) */
+@media (max-width: 767px) {
+  .mobile-hamburger-btn { display: inline-flex !important; }
+  
+  .mobile-backdrop {
+    display: block !important;
+    position: fixed; inset: 0;
+    background: rgba(11, 19, 41, 0.7) !important;
+    backdrop-filter: blur(6px) !important;
+    -webkit-backdrop-filter: blur(6px) !important;
+    z-index: 99 !important;
+  }
+
+  .sidebar {
+    position: fixed !important;
+    top: 0; bottom: 0; left: 0;
+    width: 285px !important;
+    z-index: 100 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+
+  .collapse { display: none !important; }
+
+  .main, .main.wide {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  header {
+    padding: 0 16px !important;
+    height: 66px !important;
+  }
+
+  header h1 { font-size: 16px !important; }
+  header small { font-size: 10px !important; }
+
+  .content { padding: 18px 14px 40px !important; }
+
+  .head {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .head button { width: 100% !important; }
+
+  .stats, .grid4, .grid2, .formGrid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .toolbar input, .toolbar select {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .loginbox {
+    width: calc(100% - 24px) !important;
+    padding: 24px 18px !important;
+  }
+
+  .table table { min-width: 700px !important; }
+  .table td, .table th { padding: 10px 12px !important; font-size: 11px !important; }
+}

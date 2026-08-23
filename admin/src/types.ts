@@ -14,6 +14,7 @@ export type MasterPage =
   | 'chemists'
   | 'stockists'
   | 'products'
+  | 'holidays'
   | 'geography'
   | 'geography-form'
   | 'mapping'

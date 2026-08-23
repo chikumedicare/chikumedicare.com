@@ -1,3 +1,8 @@
+import { DoctorMaster } from './master/DoctorMaster';
+import { ChemistMaster } from './master/ChemistMaster';
+import { StockistMaster } from './master/StockistMaster';
+import { ProductMaster } from './master/ProductMaster';
+import { HolidayMaster } from './master/HolidayMaster';
 ﻿import React, { useState } from 'react';
 import type { Page } from '../types';
 import type { Employee } from '../domain/hr/employee.types';
@@ -181,6 +186,13 @@ export function PageContentRouter({
       />
     );
   }
+
+    // 3.5 Field Entity Masters
+  if (page === 'doctors') return <DoctorMaster hqs={hqs} areas={areas} />;
+  if (page === 'chemists') return <ChemistMaster hqs={hqs} areas={areas} />;
+  if (page === 'stockists') return <StockistMaster hqs={hqs} areas={areas} />;
+  if (page === 'products') return <ProductMaster />;
+  if (page === 'holidays') return <HolidayMaster />;
 
   // 4. Geography Master & Mapping
   if (page === 'geography') {

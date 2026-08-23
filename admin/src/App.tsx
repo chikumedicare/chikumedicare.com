@@ -39,6 +39,7 @@ export default function App() {
 
   const [page, setPage] = useState<Page>(getInitialPage);
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Auto-expand folder accordion corresponding to active page
   const getFolderForPage = (p: Page): string | null => {
@@ -72,6 +73,7 @@ export default function App() {
   }, []);
 
   const open = (p: Page) => {
+    setMobileMenuOpen(false);
     setPage(p);
     localStorage.setItem('chiku_admin_active_page', p);
     window.location.hash = p;
@@ -108,7 +110,14 @@ export default function App() {
 
   return (
     <div className="app">
-      <aside className={'sidebar ' + (collapsed ? 'collapsed' : '')}>
+      {/* Mobile Backdrop Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="mobile-backdrop"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+      <aside className={'sidebar ' + (collapsed ? 'collapsed' : '') + (mobileMenuOpen ? ' mobile-open' : '')}>
         <div className="brand">
           <div className="logo">C</div>
           {!collapsed && (
@@ -213,6 +222,14 @@ export default function App() {
 
       <main className={'main ' + (collapsed ? 'wide' : '')}>
         <header>
+          <button
+            type="button"
+            className="mobile-hamburger-btn"
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            title="Toggle Mobile Menu"
+          >
+            ☰
+          </button>
           <div>
             <small>Admin / {activeTitle}</small>
             <h1>{activeTitle}</h1>

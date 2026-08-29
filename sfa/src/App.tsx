@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { navCategories } from './navConfig';
 import type { Page } from './types';
 import { PageContentRouter } from './pages/PageContentRouter';
-import { Login } from './pages/Login';
+import { Login } from './pages/shared/auth/Login';
 import { useAuthSessionStore } from './store/hr/useAuthSessionStore';
 import type { Employee } from './core/domain/hr/employee.types';
 import type { SfaUser } from './core/domain/hr/user.types';

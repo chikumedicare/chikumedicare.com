@@ -56,7 +56,17 @@ export function App() {
   const isReadOnly = false;
   const user = currentUser;
   const [logged, setLogged] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(true);
+
+  // Persist menuOpen live state across refreshes
+  const [menuOpen, setMenuOpen] = useState<boolean>(() => {
+    const saved = localStorage.getItem('chiku_admin_menu_open');
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const handleSetMenuOpen = (val: boolean) => {
+    setMenuOpen(val);
+    localStorage.setItem('chiku_admin_menu_open', String(val));
+  };
 
   const isAdminOrOwner = role === 'ADMIN' || role === 'OWNER' || currentUser?.role === 'ADMIN' || currentUser?.role === 'OWNER';
 
@@ -144,7 +154,7 @@ export function App() {
     <div className="admin-app-root">
       <TopNavbar
         menuOpen={menuOpen}
-        setMenuOpen={setMenuOpen}
+        setMenuOpen={handleSetMenuOpen}
         open={open}
         activeFY={activeFY}
         isReadOnly={isReadOnly}

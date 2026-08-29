@@ -36,15 +36,13 @@ export function AppSidebar({
     return null;
   };
 
-  // State to track which categories are open in accordion (all open for Admin by default or active open)
+  // State to track which categories are open in accordion (only active category open by default)
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
-    navCategories.forEach((cat) => {
-      // Default: HR and Masters open initially, others closed, or active category open
-      initial[cat.key] = cat.key === 'hr' || cat.key === 'master';
-    });
     const activeCat = findCategoryForPage(page);
-    if (activeCat) initial[activeCat] = true;
+    if (activeCat) {
+      initial[activeCat] = true;
+    }
     return initial;
   });
 

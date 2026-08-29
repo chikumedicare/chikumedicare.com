@@ -1,0 +1,357 @@
+import * as jose from 'jose';
+import { Env, AuthUser } from '../types';
+import { AuthRepository } from '../repositories/AuthRepository';
+import { UserRepository } from '../repositories/UserRepository';
+import { parseArrayField, logAudit } from '../utils/helpers';
+
+export class AuthService {
+  private async hashToken(token: string): Promise<string> {
+    const msgUint8 = new TextEncoder().encode(token);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+  }
+
+  private extractCookie(request: Request, cookieName: string): string | null {
+    const cookieHeader = request.headers.get('Cookie');
+    if (!cookieHeader) return null;
+    const cookies = cookieHeader.split(';').map((c) => c.trim());
+    for (const c of cookies) {
+      const [name, ...valParts] = c.split('=');
+      if (name === cookieName) {
+        return decodeURIComponent(valParts.join('='));
+      }
+    }
+    return null;
+  }
+
+  buildSetCookieHeader(token: string, maxAgeSeconds: number = 2592000): string {
+    // 30 days default Max-Age, Path=/api/, HttpOnly, Secure, SameSite=Strict
+    return `chiku_refresh_token=${encodeURIComponent(token)}; Path=/api/; Max-Age=${maxAgeSeconds}; HttpOnly; Secure; SameSite=Strict`;
+  }
+
+  buildClearCookieHeader(): string {
+    return 'chiku_refresh_token=; Path=/api/; Max-Age=0; HttpOnly; Secure; SameSite=Strict';
+  }
+
+  async login(request: Request, env: Env) {
+    const { userId, password, deviceId, deviceName, deviceModel, osVersion, appVersion, clientType } = (await request.json()) as any;
+
+    if (!password || typeof password !== 'string' || password.length > 100) {
+      throw new Error('Invalid password');
+    }
+    if (!userId || typeof userId !== 'string' || userId.length > 50) {
+      throw new Error('Invalid userId');
+    }
+
+    const repo = new AuthRepository(env);
+    const user: any = await repo.getUserByUserId(userId);
+
+    if (!user) throw new Error('Invalid credentials');
+    if (user.is_active === 0 || user.status === 'INACTIVE' || user.status === 'TERMINATED' || user.status === 'RESIGNED') {
+      throw new Error('User is deactivated or inactive');
+    }
+
+    const now = new Date();
+    if (user.locked_until && new Date(user.locked_until) > now) {
+      throw new Error('Account locked due to excessive failed attempts. Try again later.');
+    }
+
+    const msgUint8 = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+    const passwordHash = Array.from(new Uint8Array(hashBuffer)).map((b) => b.toString(16).padStart(2, '0')).join('');
+
+    const lhId = `lh_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const ipAddress = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '';
+    const userAgent = request.headers.get('user-agent') || 'Browser / Client';
+
+    if (user.password_hash !== passwordHash) {
+      const attempts = (user.failed_login_attempts || 0) + 1;
+      let lockedUntil = null;
+      if (attempts >= 5) {
+        lockedUntil = new Date(now.getTime() + 15 * 60000).toISOString();
+      }
+      await repo.updateFailedLogin(user.id, attempts, lockedUntil, lhId, ipAddress, deviceId || null);
+      throw new Error('Invalid credentials');
+    }
+
+    if (clientType === 'web-admin' && user.role !== 'OWNER' && user.role !== 'VP' && user.role !== 'ADMIN') {
+      throw new Error('Access Denied: Web Admin Portal is restricted to ADMIN and OWNER accounts only. Field representatives must use the SFA Mobile App.');
+    }
+
+    if (deviceId) {
+      if (!user.device_id) {
+        await repo.registerDevice(user.id, deviceId, deviceName || null, deviceModel || null, osVersion || null, appVersion || null);
+      } else if (user.device_id !== deviceId) {
+        await repo.logFailedDeviceLogin(user.id, lhId, ipAddress, deviceId);
+        throw new Error('Unauthorized Device. Please contact Admin to reset.');
+      } else {
+        await repo.updateDevice(user.id, deviceName || user.device_name, deviceModel || user.device_model, osVersion || user.os_version, appVersion || user.app_version);
+      }
+    }
+
+    // Generate Session and Session Family IDs
+    const sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const sessionFamilyId = `fam_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    const JWT_SECRET = new TextEncoder().encode(env.JWT_SECRET);
+    
+    // 1. Short-Lived Access Token (15 minutes)
+    const accessJti = `jti_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const token = await new jose.SignJWT({
+      id: String(user.id),
+      userId: user.user_id,
+      role: user.role,
+      fullName: user.full_name,
+      reportsToId: user.reports_to_id || null,
+      hqId: user.hq_id || null,
+      coveringHqIds: parseArrayField(user.covering_hq_ids),
+      deviceId: deviceId || null,
+      sessionId: sessionId,
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setJti(accessJti)
+      .setIssuedAt()
+      .setExpirationTime('15m')
+      .sign(JWT_SECRET);
+
+    // 2. Long-Lived Refresh Token (30 days)
+    const refreshJti = `jti_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const refreshToken = await new jose.SignJWT({
+      id: String(user.id),
+      sessionId: sessionId,
+      sessionFamilyId: sessionFamilyId,
+      type: 'refresh',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setJti(refreshJti)
+      .setIssuedAt()
+      .setExpirationTime('30d')
+      .sign(JWT_SECRET);
+
+    const refreshTokenHash = await this.hashToken(refreshToken);
+    const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const nowIso = now.toISOString();
+
+    // 3. Store server-side session in D1
+    await env.chikusfa_db
+      .prepare(
+        `INSERT INTO user_sessions (
+          id, user_id, session_family_id, refresh_token_hash, device_id, user_agent, ip_address, created_at, last_active_at, expires_at, is_revoked
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`
+      )
+      .bind(sessionId, String(user.id), sessionFamilyId, refreshTokenHash, deviceId || null, userAgent, ipAddress, nowIso, nowIso, expiresAt)
+      .run();
+
+    await repo.updateSuccessfulLogin(user.id, lhId, ipAddress, deviceId || null);
+
+    const ROLE_PERMISSIONS: Record<string, string[]> = {
+      OWNER: ['ALL_ACCESS'],
+      ADMIN: ['ALL_ACCESS'],
+      VP: ['MANAGE_USERS', 'MANAGE_GEOGRAPHY', 'MANAGE_CUSTOMERS', 'MANAGE_PRODUCTS', 'MANAGE_TARGETS', 'MANAGE_DCR', 'MANAGE_TOUR_PLANS', 'MANAGE_LEAVES', 'MANAGE_EXPENSES', 'MANAGE_PAYROLL'],
+      NSM: ['MANAGE_USERS', 'MANAGE_CUSTOMERS', 'MANAGE_PRODUCTS', 'MANAGE_TARGETS', 'MANAGE_DCR', 'MANAGE_TOUR_PLANS', 'MANAGE_LEAVES', 'MANAGE_EXPENSES'],
+      ZSM: ['MANAGE_CUSTOMERS', 'MANAGE_PRODUCTS', 'MANAGE_TARGETS', 'MANAGE_DCR', 'MANAGE_TOUR_PLANS', 'MANAGE_LEAVES', 'MANAGE_EXPENSES'],
+      RSM: ['MANAGE_CUSTOMERS', 'MANAGE_PRODUCTS', 'MANAGE_TARGETS', 'MANAGE_DCR', 'MANAGE_TOUR_PLANS', 'MANAGE_LEAVES', 'MANAGE_EXPENSES'],
+      ASM: ['MANAGE_CUSTOMERS', 'MANAGE_PRODUCTS', 'MANAGE_TARGETS', 'MANAGE_DCR', 'MANAGE_TOUR_PLANS', 'MANAGE_LEAVES', 'MANAGE_EXPENSES'],
+      MR: ['MANAGE_CUSTOMERS', 'MANAGE_DCR', 'MANAGE_TOUR_PLANS', 'MANAGE_LEAVES', 'MANAGE_EXPENSES'],
+    };
+
+    const perms: string[] = ROLE_PERMISSIONS[user.role] || ['FIELD_ACCESS'];
+
+    const userResponse = {
+      id: String(user.id),
+      userId: user.user_id,
+      fullName: user.full_name,
+      role: user.role,
+      empCode: user.emp_code || '',
+      reportsToId: user.reports_to_id || null,
+      reportsToIds: user.reports_to_ids ? JSON.parse(user.reports_to_ids) : [],
+      hqId: user.hq_id || null,
+      coveringHqIds: parseArrayField(user.covering_hq_ids),
+      areaIds: parseArrayField(user.area_ids),
+      permissions: perms,
+      isActive: true,
+    };
+
+    await logAudit(env, {
+      module: 'auth',
+      type: 'LOGIN',
+      action: 'LOGIN',
+      entityType: 'users',
+      entityId: String(user.id),
+      details: {
+        sessionId,
+        deviceId: deviceId || null,
+        ip: ipAddress,
+        clientType: clientType || (deviceId ? 'mobile-app' : 'web-admin'),
+        userAgent,
+      },
+      userId: String(user.id),
+      userName: user.full_name,
+    });
+
+    const cookieHeader = this.buildSetCookieHeader(refreshToken);
+
+    return { token, refreshToken, user: userResponse, cookieHeader };
+  }
+
+  async refresh(request: Request, env: Env) {
+    let refreshToken = this.extractCookie(request, 'chiku_refresh_token');
+    if (!refreshToken) {
+      try {
+        const body = (await request.json()) as any;
+        refreshToken = body?.refreshToken || null;
+      } catch (e) {}
+    }
+
+    if (!refreshToken) {
+      throw new Error('Missing refresh token');
+    }
+
+    const JWT_SECRET = new TextEncoder().encode(env.JWT_SECRET);
+    let payload: any;
+    try {
+      const verified = await jose.jwtVerify(refreshToken, JWT_SECRET);
+      payload = verified.payload;
+    } catch (e) {
+      throw new Error('Invalid or expired refresh token');
+    }
+
+    if (!payload || payload.type !== 'refresh' || !payload.sessionId) {
+      throw new Error('Invalid refresh token structure');
+    }
+
+    const presentedHash = await this.hashToken(refreshToken);
+
+    // Query session in D1
+    const session: any = await env.chikusfa_db
+      .prepare('SELECT * FROM user_sessions WHERE id = ?')
+      .bind(payload.sessionId)
+      .first();
+
+    // 1. REUSE DETECTION: If session is already revoked or token hash doesn't match
+    if (!session || session.is_revoked === 1 || session.refresh_token_hash !== presentedHash) {
+      console.warn('[Auth Security] Refresh token reuse / compromised session detected for user:', payload.id);
+      
+      // Revoke all sessions in that family immediately
+      if (payload.sessionFamilyId) {
+        await env.chikusfa_db
+          .prepare(
+            `UPDATE user_sessions SET is_revoked = 1, revoked_at = datetime('now'), revocation_reason = 'REUSE_DETECTED' WHERE session_family_id = ?`
+          )
+          .bind(payload.sessionFamilyId)
+          .run();
+      }
+
+      await logAudit(env, {
+        module: 'auth',
+        type: 'SECURITY_ALERT',
+        action: 'TOKEN_REUSE_DETECTED',
+        entityType: 'users',
+        entityId: String(payload.id),
+        details: { sessionId: payload.sessionId, familyId: payload.sessionFamilyId },
+        userId: String(payload.id),
+        userName: 'Unknown',
+      });
+
+      throw new Error('401 Unauthorized: Session compromised or reused. Re-authentication required.');
+    }
+
+    // 2. Expiration check
+    const now = new Date();
+    if (new Date(session.expires_at) < now) {
+      throw new Error('401 Unauthorized: Session expired.');
+    }
+
+    // 3. User existence and active status in D1
+    const userRepo = new UserRepository(env);
+    const user: any = await userRepo.findById(payload.id);
+    if (!user || user.is_active === 0 || user.status === 'INACTIVE' || user.status === 'TERMINATED' || user.status === 'RESIGNED') {
+      await env.chikusfa_db
+        .prepare(`UPDATE user_sessions SET is_revoked = 1, revoked_at = datetime('now'), revocation_reason = 'USER_INACTIVE' WHERE id = ?`)
+        .bind(session.id)
+        .run();
+      throw new Error('401 Unauthorized: User is inactive.');
+    }
+
+    // 4. ROTATION: Issue new short-lived access token (15m) + new rotated refresh token (30d)
+    const accessJti = `jti_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const token = await new jose.SignJWT({
+      id: String(user.id),
+      userId: user.user_id,
+      role: user.role,
+      fullName: user.full_name,
+      reportsToId: user.reports_to_id || null,
+      hqId: user.hq_id || null,
+      coveringHqIds: parseArrayField(user.covering_hq_ids),
+      deviceId: user.device_id || null,
+      sessionId: session.id,
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setJti(accessJti)
+      .setIssuedAt()
+      .setExpirationTime('15m')
+      .sign(JWT_SECRET);
+
+    const refreshJti = `jti_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const newRefreshToken = await new jose.SignJWT({
+      id: String(user.id),
+      sessionId: session.id,
+      sessionFamilyId: session.session_family_id,
+      type: 'refresh',
+    })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setJti(refreshJti)
+      .setIssuedAt()
+      .setExpirationTime('30d')
+      .sign(JWT_SECRET);
+
+    const newHash = await this.hashToken(newRefreshToken);
+    const newExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    // Update session record with new token hash and last active timestamp
+    await env.chikusfa_db
+      .prepare(
+        `UPDATE user_sessions SET refresh_token_hash = ?, last_active_at = datetime('now'), expires_at = ? WHERE id = ?`
+      )
+      .bind(newHash, newExpiresAt, session.id)
+      .run();
+
+    const cookieHeader = this.buildSetCookieHeader(newRefreshToken);
+
+    return { token, refreshToken: newRefreshToken, cookieHeader };
+  }
+
+  async logout(request: Request, env: Env, authUser?: AuthUser) {
+    let refreshToken = this.extractCookie(request, 'chiku_refresh_token');
+    if (!refreshToken) {
+      try {
+        const body = (await request.json()) as any;
+        refreshToken = body?.refreshToken || null;
+      } catch (e) {}
+    }
+
+    const sessionId = (authUser as any)?.sessionId;
+
+    if (sessionId) {
+      await env.chikusfa_db
+        .prepare(
+          `UPDATE user_sessions SET is_revoked = 1, revoked_at = datetime('now'), revocation_reason = 'USER_LOGOUT' WHERE id = ?`
+        )
+        .bind(sessionId)
+        .run();
+    } else if (refreshToken) {
+      const hash = await this.hashToken(refreshToken);
+      await env.chikusfa_db
+        .prepare(
+          `UPDATE user_sessions SET is_revoked = 1, revoked_at = datetime('now'), revocation_reason = 'USER_LOGOUT' WHERE refresh_token_hash = ?`
+        )
+        .bind(hash)
+        .run();
+    }
+
+    const clearCookieHeader = this.buildClearCookieHeader();
+    return { success: true, clearCookieHeader };
+  }
+}

@@ -5,7 +5,8 @@
   "main": "optimize.js",
   "scripts": {
     "optimize": "node optimize.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "python -m http.server 8080"
   },
   "repository": {
     "type": "git",

@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS idx_doctors_code ON doctors(dr_code) WHERE dr_code IS NOT NULL; CREATE UNIQUE INDEX IF NOT EXISTS idx_chemists_code ON chemists(chemist_code) WHERE chemist_code IS NOT NULL; CREATE UNIQUE INDEX IF NOT EXISTS idx_stockists_code ON stockists(stockist_code) WHERE stockist_code IS NOT NULL;

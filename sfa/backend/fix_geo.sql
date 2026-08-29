@@ -1,0 +1,21 @@
+
+ALTER TABLE states RENAME COLUMN name TO state_name;
+ALTER TABLE states RENAME COLUMN code TO state_code;
+ALTER TABLE states ADD COLUMN description TEXT;
+ALTER TABLE states ADD COLUMN display_order INTEGER DEFAULT 0;
+ALTER TABLE states ADD COLUMN created_at DATETIME;
+ALTER TABLE states ADD COLUMN updated_at DATETIME;
+ALTER TABLE states ADD COLUMN created_by TEXT;
+ALTER TABLE states ADD COLUMN updated_by TEXT;
+ALTER TABLE states ADD COLUMN deleted_at DATETIME;
+ALTER TABLE states ADD COLUMN deleted_by TEXT;
+
+ALTER TABLE zones ADD COLUMN zone_code TEXT;
+ALTER TABLE zones ADD COLUMN description TEXT;
+ALTER TABLE zones ADD COLUMN created_at DATETIME;
+ALTER TABLE zones ADD COLUMN updated_at DATETIME;
+ALTER TABLE zones ADD COLUMN created_by TEXT;
+ALTER TABLE zones ADD COLUMN updated_by TEXT;
+ALTER TABLE zones ADD COLUMN deleted_at DATETIME;
+ALTER TABLE zones ADD COLUMN deleted_by TEXT;
+

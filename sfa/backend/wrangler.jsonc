@@ -1,0 +1,32 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "backend",
+	"main": "src/index.ts",
+	"compatibility_date": "2024-05-24",
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"vars": {
+		"FIREBASE_PROJECT_ID": "chikusfa"
+	},
+	"d1_databases": [
+		{
+			"binding": "chikusfa_db",
+			"database_name": "chikusfa-db",
+			"database_id": "caf6a909-665e-424d-a641-f4ffe323bf1a"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "chikusfa_storage",
+			"bucket_name": "chikusfa-storage"
+		}
+	],
+	"triggers": {
+		"crons": ["29 18 * * *"]
+	}
+}

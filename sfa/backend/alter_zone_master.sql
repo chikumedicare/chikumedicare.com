@@ -1,0 +1,10 @@
+ALTER TABLE zones ADD COLUMN zone_code TEXT;
+ALTER TABLE zones ADD COLUMN description TEXT;
+ALTER TABLE zones ADD COLUMN created_at DATETIME;
+ALTER TABLE zones ADD COLUMN updated_at DATETIME;
+ALTER TABLE zones ADD COLUMN created_by TEXT;
+ALTER TABLE zones ADD COLUMN updated_by TEXT;
+ALTER TABLE zones ADD COLUMN deleted_at DATETIME;
+ALTER TABLE zones ADD COLUMN deleted_by TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_zones_code ON zones(zone_code);

@@ -1,3 +1,6 @@
+import { ChemistBasicInfoSection } from './ChemistBasicInfoSection';
+import { ChemistTerritorySection } from './ChemistTerritorySection';
+import { ChemistComplianceContactSection } from './ChemistComplianceContactSection';
 import React, { useState } from 'react';
 import type { Headquarter, Area, Beat } from '../../../../core/domain/hr/geography.types';
 import type { Chemist } from '../../../../core/domain/master/fieldMaster.types';
@@ -234,269 +237,46 @@ export function ChemistFormModal({
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* ─── SECTION 1: Chemist Info ─── */}
-            <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-              <h4 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🏪</span> Chemist & Shop Information
-              </h4>
+            <ChemistBasicInfoSection
+              chemistName={chemistName}
+              setChemistName={setChemistName}
+              contactPerson={contactPerson}
+              setContactPerson={setContactPerson}
+            />
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Chemist / Shop Name *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Apollo Pharmacy / Sharma Medical Stores"
-                    value={chemistName}
-                    onChange={(e) => setChemistName(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
+            <ChemistTerritorySection
+              hqId={hqId}
+              setHqId={setHqId}
+              hqs={hqs}
+              areaId={areaId}
+              setAreaId={setAreaId}
+              filteredAreas={filteredAreas}
+              beatId={beatId}
+              setBeatId={setBeatId}
+              filteredBeats={filteredBeats}
+            />
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Contact Person / Owner Name
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Shri Rajesh Sharma"
-                    value={contactPerson}
-                    onChange={(e) => setContactPerson(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* ─── SECTION 2: Territory Mapping ─── */}
-            <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-              <h4 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🗺️</span> Territory & Route Mapping
-              </h4>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Base HQ *
-                  </label>
-                  <select
-                    className="form-select"
-                    value={hqId}
-                    onChange={(e) => setHqId(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
-                  >
-                    {hqs.length === 0 && <option value="">No HQs Found</option>}
-                    {hqs.map((h) => (
-                      <option key={h.id} value={h.id}>
-                        📍 {(h as any).name || (h as any).hq_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Area / Town *
-                  </label>
-                  <select
-                    className="form-select"
-                    value={areaId}
-                    onChange={(e) => setAreaId(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
-                  >
-                    {filteredAreas.length === 0 && <option value="">General Area</option>}
-                    {filteredAreas.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        🏘️ {(a as any).name || (a as any).area_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Beat / Patch *
-                  </label>
-                  <select
-                    className="form-select"
-                    value={beatId}
-                    onChange={(e) => setBeatId(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
-                  >
-                    {filteredBeats.length === 0 && <option value="">Main Market Route</option>}
-                    {filteredBeats.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        🛣️ {(b as any).name || (b as any).beat_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* ─── SECTION 3: Shop / Counter Address ─── */}
-            <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-              <h4 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>📍</span> Shop / Counter Address
-              </h4>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Address Line 1 *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Shop No. 12, Commercial Plaza"
-                    value={add1}
-                    onChange={(e) => setAdd1(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Address Line 2
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Opposite Government Hospital, Main Road"
-                    value={add2}
-                    onChange={(e) => setAdd2(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. Bhopal"
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                      PIN Code
-                    </label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="e.g. 462001"
-                      value={pinCode}
-                      onChange={(e) => setPinCode(e.target.value)}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                      State *
-                    </label>
-                    <select
-                      className="form-select"
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
-                    >
-                      {INDIAN_STATES.map((st) => (
-                        <option key={st} value={st}>
-                          {st}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ─── SECTION 4: Licenses & Compliance ─── */}
-            <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-              <h4 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>📜</span> Drug License & GST Compliance
-              </h4>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Drug License No. (DL 20B / 21B)
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. 20B/1234/MP/2023"
-                    value={drugLicenseNumber}
-                    onChange={(e) => setDrugLicenseNumber(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    GSTIN Number
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. 23AAAC1234F1Z5"
-                    value={gstin}
-                    onChange={(e) => setGstin(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* ─── SECTION 5: Contact Information ─── */}
-            <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-              <h4 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>📞</span> Contact Information
-              </h4>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Mobile Phone *
-                  </label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    placeholder="e.g. +91 98260 12345"
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    placeholder="e.g. apollo.bhopal@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
-              </div>
-            </div>
+            <ChemistComplianceContactSection
+              add1={add1}
+              setAdd1={setAdd1}
+              add2={add2}
+              setAdd2={setAdd2}
+              city={city}
+              setCity={setCity}
+              pinCode={pinCode}
+              setPinCode={setPinCode}
+              state={state}
+              setState={setState}
+              INDIAN_STATES={INDIAN_STATES}
+              drugLicenseNumber={drugLicenseNumber}
+              setDrugLicenseNumber={setDrugLicenseNumber}
+              gstin={gstin}
+              setGstin={setGstin}
+              mobile={mobile}
+              setMobile={setMobile}
+              email={email}
+              setEmail={setEmail}
+            />
           </div>
 
           {/* Sticky Modal Footer Actions */}

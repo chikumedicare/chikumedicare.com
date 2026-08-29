@@ -3,38 +3,9 @@ import { Env, AuthUser } from '../types';
 import { AuthRepository } from '../repositories/AuthRepository';
 import { UserRepository } from '../repositories/UserRepository';
 import { parseArrayField, logAudit } from '../utils/helpers';
+import { hashToken, extractCookie, buildSetCookieHeader, buildClearCookieHeader } from '../utils/cookieHelpers';
 
 export class AuthService {
-  private async hashToken(token: string): Promise<string> {
-    const msgUint8 = new TextEncoder().encode(token);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-    return Array.from(new Uint8Array(hashBuffer))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-  }
-
-  private extractCookie(request: Request, cookieName: string): string | null {
-    const cookieHeader = request.headers.get('Cookie');
-    if (!cookieHeader) return null;
-    const cookies = cookieHeader.split(';').map((c) => c.trim());
-    for (const c of cookies) {
-      const [name, ...valParts] = c.split('=');
-      if (name === cookieName) {
-        return decodeURIComponent(valParts.join('='));
-      }
-    }
-    return null;
-  }
-
-  buildSetCookieHeader(token: string, maxAgeSeconds: number = 2592000): string {
-    // 30 days default Max-Age, Path=/api/, HttpOnly, Secure, SameSite=Strict
-    return `chiku_refresh_token=${encodeURIComponent(token)}; Path=/api/; Max-Age=${maxAgeSeconds}; HttpOnly; Secure; SameSite=Strict`;
-  }
-
-  buildClearCookieHeader(): string {
-    return 'chiku_refresh_token=; Path=/api/; Max-Age=0; HttpOnly; Secure; SameSite=Strict';
-  }
-
   async login(request: Request, env: Env) {
     const { userId, password, deviceId, deviceName, deviceModel, osVersion, appVersion, clientType } = (await request.json()) as any;
 
@@ -130,7 +101,7 @@ export class AuthService {
       .setExpirationTime('30d')
       .sign(JWT_SECRET);
 
-    const refreshTokenHash = await this.hashToken(refreshToken);
+    const refreshTokenHash = await hashToken(refreshToken);
     const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
     const nowIso = now.toISOString();
 
@@ -191,13 +162,13 @@ export class AuthService {
       userName: user.full_name,
     });
 
-    const cookieHeader = this.buildSetCookieHeader(refreshToken);
+    const cookieHeader = buildSetCookieHeader(refreshToken);
 
     return { token, refreshToken, user: userResponse, cookieHeader };
   }
 
   async refresh(request: Request, env: Env) {
-    let refreshToken = this.extractCookie(request, 'chiku_refresh_token');
+    let refreshToken = extractCookie(request, 'chiku_refresh_token');
     if (!refreshToken) {
       try {
         const body = (await request.json()) as any;
@@ -222,7 +193,7 @@ export class AuthService {
       throw new Error('Invalid refresh token structure');
     }
 
-    const presentedHash = await this.hashToken(refreshToken);
+    const presentedHash = await hashToken(refreshToken);
 
     // Query session in D1
     const session: any = await env.chikusfa_db
@@ -307,7 +278,7 @@ export class AuthService {
       .setExpirationTime('30d')
       .sign(JWT_SECRET);
 
-    const newHash = await this.hashToken(newRefreshToken);
+    const newHash = await hashToken(newRefreshToken);
     const newExpiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     // Update session record with new token hash and last active timestamp
@@ -318,13 +289,13 @@ export class AuthService {
       .bind(newHash, newExpiresAt, session.id)
       .run();
 
-    const cookieHeader = this.buildSetCookieHeader(newRefreshToken);
+    const cookieHeader = buildSetCookieHeader(newRefreshToken);
 
     return { token, refreshToken: newRefreshToken, cookieHeader };
   }
 
   async logout(request: Request, env: Env, authUser?: AuthUser) {
-    let refreshToken = this.extractCookie(request, 'chiku_refresh_token');
+    let refreshToken = extractCookie(request, 'chiku_refresh_token');
     if (!refreshToken) {
       try {
         const body = (await request.json()) as any;
@@ -342,7 +313,7 @@ export class AuthService {
         .bind(sessionId)
         .run();
     } else if (refreshToken) {
-      const hash = await this.hashToken(refreshToken);
+      const hash = await hashToken(refreshToken);
       await env.chikusfa_db
         .prepare(
           `UPDATE user_sessions SET is_revoked = 1, revoked_at = datetime('now'), revocation_reason = 'USER_LOGOUT' WHERE refresh_token_hash = ?`
@@ -351,7 +322,7 @@ export class AuthService {
         .run();
     }
 
-    const clearCookieHeader = this.buildClearCookieHeader();
+    const clearCookieHeader = buildClearCookieHeader();
     return { success: true, clearCookieHeader };
   }
 }

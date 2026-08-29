@@ -4,6 +4,7 @@ import { TextField, SelectField } from '../../../components/FormFields';
 import { LocalityAutocompleteField } from '../../../components/LocalityAutocompleteField';
 import { HqFormSection } from './HqFormSection';
 import { AreaBeatFormSection } from './AreaBeatFormSection';
+import { DivisionAndParentHierarchySection } from './DivisionAndParentHierarchySection';
 import { useGeographyForm } from './useGeographyForm';
 import { useHeadOfficeStore } from '../../../store/hr/useHeadOfficeStore';
 import type { TerritoryType } from '../../../store/hr/useGeographyStore';
@@ -156,81 +157,21 @@ export function GeographyFormModal({
 
         <form onSubmit={(e) => { e.preventDefault(); f.handleSubmit(); }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Section 1: Division Assignment (Hidden for HO) */}
-            {!isHoHq && (
-              <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#0284c7', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>💼</span> <span>1. Strategic Marketing Division Assignment</span>
-                </div>
-                <SelectField
-                  label={'Division * ' + (item ? '(Immutable in Edit Mode)' : '')}
-                  value={f.divisionId}
-                  onChange={(v) => f.setDivisionId(v)}
-                  disabled={!!item}
-                  options={[
-                    { v: '', l: '-- Select Division --' },
-                    ...divisions.map((d) => ({ v: d.id, l: d.code + ' - ' + d.name })),
-                  ]}
-                />
-              </div>
-            )}
-
-            {/* Section 2: Parent Territory Hierarchy (Hidden for HO) */}
-            {type !== 'Zone' && !isHoHq && (
-              <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontSize: '14px', fontWeight: 700, color: '#0284c7', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>🔗</span> <span>2. Parent Territory Hierarchy</span>
-                </div>
-                {type === 'State' && (
-                  <SelectField
-                    label="Parent Zone *"
-                    value={f.parentId}
-                    onChange={(v) => { f.setParentId(v); f.setError(''); }}
-                    disabled={!f.divisionId}
-                    options={[
-                      { v: '', l: '-- Select Parent Zone --' },
-                      ...filteredZones.map((z) => ({ v: z.id, l: z.code + ' - ' + z.name })),
-                    ]}
-                  />
-                )}
-                {type === 'HQ' && (
-                  <SelectField
-                    label="Parent State *"
-                    value={f.parentId}
-                    onChange={(v) => { f.setParentId(v); f.setError(''); }}
-                    disabled={!f.divisionId}
-                    options={[
-                      { v: '', l: '-- Select Parent State --' },
-                      ...filteredStates.map((s) => ({ v: s.id, l: s.code + ' - ' + s.name })),
-                    ]}
-                  />
-                )}
-                {type === 'Area' && (
-                  <SelectField
-                    label="Parent Headquarter (HQ) *"
-                    value={f.parentId}
-                    onChange={(v) => { f.setParentId(v); f.setError(''); }}
-                    disabled={!f.divisionId}
-                    options={[
-                      { v: '', l: '-- Select Parent HQ --' },
-                      ...filteredHqs.map((h) => ({ v: h.id, l: h.code + ' - ' + h.name })),
-                    ]}
-                  />
-                )}
-                {type === 'Beat' && (
-                  <SelectField
-                    label="Parent Area *"
-                    value={f.parentId}
-                    onChange={(v) => { f.setParentId(v); f.setError(''); }}
-                    disabled={!f.divisionId}
-                    options={[
-                      { v: '', l: '-- Select Parent Area --' },
-                      ...filteredAreas.map((a) => ({ v: a.id, l: a.code + ' - ' + a.name })),
-                    ]}
-                  />
-                )}
-              </div>
-            )}
+            <DivisionAndParentHierarchySection
+              type={type}
+              item={item}
+              isHoHq={isHoHq}
+              divisionId={f.divisionId}
+              setDivisionId={f.setDivisionId}
+              parentId={f.parentId}
+              setParentId={f.setParentId}
+              setError={f.setError}
+              divisions={divisions}
+              filteredZones={filteredZones}
+              filteredStates={filteredStates}
+              filteredHqs={filteredHqs}
+              filteredAreas={filteredAreas}
+            />
 
             {/* Section 3: Identity & Details */}
             <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>

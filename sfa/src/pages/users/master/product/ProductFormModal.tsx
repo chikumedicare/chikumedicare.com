@@ -1,3 +1,5 @@
+import { ProductBrandSection } from './ProductBrandSection';
+import { ProductPricingSection } from './ProductPricingSection';
 import React, { useState } from 'react';
 import type { Product } from '../../../../core/domain/master/fieldMaster.types';
 import type { Division } from '../../../../core/domain/hr/headOffice.types';
@@ -200,104 +202,20 @@ export function ProductFormModal({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* ─── SECTION 1: Product Brand & Division ─── */}
-            <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-              <h4 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>📦</span> Brand & Division Mapping
-              </h4>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr', gap: '14px', marginBottom: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Product / Brand Name *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. Chiku-CV 625 / Gluta-Glow Serum"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Product Code / SKU
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. PRD-001"
-                    value={productCode}
-                    onChange={(e) => setProductCode(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '14px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Division *
-                  </label>
-                  <select
-                    className="form-select"
-                    value={divisionId}
-                    onChange={(e) => setDivisionId(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
-                  >
-                    {divisions.length > 0 ? (
-                      divisions.map((d) => (
-                        <option key={d.id} value={d.id}>
-                          🏢 {(d as any).name || (d as any).division_name}
-                        </option>
-                      ))
-                    ) : (
-                      <>
-                        <option value="GENERAL">🏢 Main Pharma Division</option>
-                        <option value="DERMA">🧴 Derma Care Division</option>
-                        <option value="COSMETIC">✨ Cosmetic & Aesthetics</option>
-                        <option value="CARDIAC">❤️ Cardiac & Diabetic</option>
-                        <option value="ALL">🌐 All Divisions (Universal)</option>
-                      </>
-                    )}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Dosage Category / Form *
-                  </label>
-                  <select
-                    className="form-select"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as any)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
-                  >
-                    {CATEGORY_OPTIONS.map((opt) => (
-                      <option key={opt.v} value={opt.v}>
-                        {opt.l}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Pack Size / Packaging *
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="e.g. 10x10 Strips / 50g Tube"
-                    value={packSize}
-                    onChange={(e) => setPackSize(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                </div>
-              </div>
-            </div>
+            <ProductBrandSection
+              productName={productName}
+              setProductName={setProductName}
+              productCode={productCode}
+              setProductCode={setProductCode}
+              divisionId={divisionId}
+              setDivisionId={setDivisionId}
+              divisions={divisions}
+              category={category}
+              setCategory={setCategory}
+              packSize={packSize}
+              setPackSize={setPackSize}
+              CATEGORY_OPTIONS={CATEGORY_OPTIONS}
+            />
 
             {/* ─── SECTION 2: Active Generic Composition ─── */}
             <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
@@ -321,100 +239,18 @@ export function ProductFormModal({
             </div>
 
             {/* ─── SECTION 3: Commercial Pricing Structure ─── */}
-            <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
-              <h4 style={{ margin: '0 0 14px 0', fontSize: '14px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>💰</span> Commercial Pricing & Taxes (INR ₹)
-              </h4>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    MRP (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    placeholder="150.00"
-                    value={mrp}
-                    onChange={(e) => setMrp(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                  <small style={{ color: '#64748b', fontSize: '11px' }}>Max Retail</small>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    PTR (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    placeholder="120.00"
-                    value={ptr}
-                    onChange={(e) => setPtr(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                  <small style={{ color: '#64748b', fontSize: '11px' }}>To Chemist</small>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    PTS (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    placeholder="110.00"
-                    value={pts}
-                    onChange={(e) => setPts(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                  <small style={{ color: '#64748b', fontSize: '11px' }}>To Stockist</small>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    NRV (₹) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    className="form-input"
-                    placeholder="95.00"
-                    value={nrv}
-                    onChange={(e) => setNrv(e.target.value)}
-                    required
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                  />
-                  <small style={{ color: '#64748b', fontSize: '11px' }}>Net Realized</small>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    GST Rate *
-                  </label>
-                  <select
-                    className="form-select"
-                    value={gstPercent}
-                    onChange={(e) => setGstPercent(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
-                  >
-                    <option value="0">0%</option>
-                    <option value="5">5%</option>
-                    <option value="12">12%</option>
-                    <option value="18">18%</option>
-                    <option value="28">28%</option>
-                  </select>
-                  <small style={{ color: '#64748b', fontSize: '11px' }}>Tax Slab</small>
-                </div>
-              </div>
-            </div>
+            <ProductPricingSection
+              mrp={mrp}
+              setMrp={setMrp}
+              ptr={ptr}
+              setPtr={setPtr}
+              pts={pts}
+              setPts={setPts}
+              nrv={nrv}
+              setNrv={setNrv}
+              gstPercent={gstPercent}
+              setGstPercent={setGstPercent}
+            />
           </div>
 
           {/* Sticky Modal Footer Actions */}

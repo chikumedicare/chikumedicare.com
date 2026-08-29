@@ -4,6 +4,7 @@ import type { Employee, EmploymentStatus } from '../../core/domain/hr/employee.t
 import type { SfaUser, SfaRole } from '../../core/domain/hr/user.types';
 import type { LeaveAllocation, DaRate, TaPolicy } from '../../core/domain/hr/leave.types';
 import { GatewayContainer } from '../../core/container/GatewayContainer';
+import { useLeaveDaActions } from './useLeaveDaActions';
 
 export function useHrStore() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -228,111 +229,16 @@ export function useHrStore() {
     }
   }, [promotionGateway]);
 
-  const addOrUpdateLeaveAllocation = useCallback(
-    async (draft: Partial<LeaveAllocation>) => {
-      try {
-        setLoading(true);
-        if (draft.id) {
-          await leaveGateway.updateLeaveAllocation(draft.id, draft);
-        } else {
-          await leaveGateway.createLeaveAllocation(draft);
-        }
-        await refresh();
-        return { success: true };
-      } catch (err: unknown) {
-        return { success: false, error: getErrorMessage(err) };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [leaveGateway, refresh]
-  );
-
-  const deleteLeaveAllocation = useCallback(
-    async (id: string) => {
-      try {
-        setLoading(true);
-        await leaveGateway.deleteLeaveAllocation(id);
-        await refresh();
-        return { success: true };
-      } catch (err: unknown) {
-        return { success: false, error: getErrorMessage(err) };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [leaveGateway, refresh]
-  );
-
-  const bulkAllocateLeaves = useCallback(
-    async (
-      targetUsers: SfaUser[],
-      cl: number,
-      sl: number,
-      pl: number,
-      year: string,
-      onProgress?: (curr: number, total: number) => void
-    ) => {
-      try {
-        setLoading(true);
-        let count = 0;
-        for (const u of targetUsers) {
-          const existing = leaves.find((l) => l.employeeId === u.empCode && l.year === year);
-          if (existing) {
-            await leaveGateway.updateLeaveAllocation(existing.id, { cl, sl, pl, year, isActive: true });
-          } else {
-            await leaveGateway.createLeaveAllocation({
-              employeeId: u.empCode,
-              employeeName: u.fullName,
-              designation: u.designation,
-              year,
-              cl,
-              sl,
-              pl,
-              isActive: true,
-            });
-          }
-          count++;
-          if (onProgress) onProgress(count, targetUsers.length);
-        }
-        await refresh();
-        return { success: true, count };
-      } catch (err: unknown) {
-        return { success: false, error: getErrorMessage(err) };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [leaveGateway, leaves, refresh]
-  );
-
-  const fetchLeaveApplications = useCallback(
-    async (fy?: string) => {
-      try {
-        return await leaveGateway.getLeaveApplications(fy);
-      } catch (err: unknown) {
-        console.error('[useHrStore] fetchLeaveApplications error:', err);
-        return [];
-      }
-    },
-    [leaveGateway]
-  );
-
-  const updateLeaveApplicationStatus = useCallback(
-    async (id: string, status: 'APPROVED' | 'REJECTED', approverId?: string) => {
-      try {
-        setLoading(true);
-        await leaveGateway.updateLeaveApplicationStatus(id, status, approverId);
-        await refresh();
-        return { success: true };
-      } catch (err: unknown) {
-        return { success: false, error: getErrorMessage(err) };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [leaveGateway, refresh]
-  );
+  const {
+    addOrUpdateLeaveAllocation,
+    deleteLeaveAllocation,
+    bulkAllocateLeaves,
+    fetchLeaveApplications,
+    updateLeaveApplicationStatus,
+    addOrUpdateRoleDaRates,
+    deleteRoleDaRates,
+    bulkAdjustDaRates,
+  } = useLeaveDaActions({ leaveGateway, daGateway, refresh, setLoading, leaves, daRates });
 
   const updateUserHierarchy = useCallback(
     async (userId: string, reportsToId?: string) => {
@@ -376,74 +282,6 @@ export function useHrStore() {
       }
     },
     [userGateway]
-  );
-
-  const addOrUpdateRoleDaRates = useCallback(
-    async (
-      role: string,
-      hq: number,
-      exhq: number,
-      outstation: number,
-      transit: number,
-      effectiveFrom?: string,
-      isActive = true,
-      existingIds?: { hq?: string; exhq?: string; outstation?: string; transit?: string },
-      taPolicy?: TaPolicy
-    ) => {
-      try {
-        setLoading(true);
-        await daGateway.saveRoleDaRates(
-          role,
-          hq,
-          exhq,
-          outstation,
-          transit,
-          effectiveFrom,
-          isActive,
-          existingIds,
-          taPolicy
-        );
-        await refresh();
-        return { success: true };
-      } catch (err: unknown) {
-        return { success: false, error: getErrorMessage(err) };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [daGateway, refresh]
-  );
-
-  const deleteRoleDaRates = useCallback(
-    async (existingIds: string[]) => {
-      try {
-        setLoading(true);
-        await daGateway.deleteRoleDaRates(existingIds);
-        await refresh();
-        return { success: true };
-      } catch (err: unknown) {
-        return { success: false, error: getErrorMessage(err) };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [daGateway, refresh]
-  );
-
-  const bulkAdjustDaRates = useCallback(
-    async (percentIncrement: number, fixedIncrement: number, targetRole?: string) => {
-      try {
-        setLoading(true);
-        const res = await daGateway.bulkAdjustDaRates(daRates, percentIncrement, fixedIncrement, targetRole);
-        await refresh();
-        return res;
-      } catch (err: unknown) {
-        return { success: false, error: getErrorMessage(err) };
-      } finally {
-        setLoading(false);
-      }
-    },
-    [daGateway, daRates, refresh]
   );
 
   return {

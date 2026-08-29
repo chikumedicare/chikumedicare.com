@@ -7,7 +7,7 @@ export class UserRepository extends BaseRepository {
   }
 
   async findByUserId(userId: string, excludeId?: string) {
-    let query = `SELECT id FROM users WHERE user_id = ?`;
+    let query = `SELECT * FROM users WHERE user_id = ?`;
     const params = [userId];
     if (excludeId) {
       query += ` AND id != ?`;

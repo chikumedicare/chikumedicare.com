@@ -35,7 +35,7 @@ export function GeographyFormModal({
   const f = useGeographyForm(type, item, zones, states, hqs, areas, onSave, back);
 
   const prefixHint: Record<TerritoryType, string> = {
-    HO: 'HO### (e.g. HO001, HO002...)',
+    HO: 'HO###',
     Zone: 'ZN### (e.g. ZN001, ZN002...)',
     State: 'ST### (e.g. ST001, ST002...)',
     HQ: 'HQ### (e.g. HQ001, HQ002...)',
@@ -47,8 +47,6 @@ export function GeographyFormModal({
   const filteredStates = states.filter((s) => !f.divisionId || s.divisionId === f.divisionId);
   const filteredHqs = hqs.filter((h) => !f.divisionId || h.divisionId === f.divisionId);
   const filteredAreas = areas.filter((a) => !f.divisionId || a.divisionId === f.divisionId);
-
-  const isHoHq = (type === 'HQ' && f.hqType === 'HO') || type === 'HO';
 
   return (
     <div
@@ -89,13 +87,10 @@ export function GeographyFormModal({
         >
           <div>
             <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-              {type === 'HO' ? '🏢 ' : ''}
-              {item ? `Edit ${type === 'HO' ? 'Head Office' : type}: ${item.name}` : `Create New ${type === 'HO' ? 'Head Office (Corporate HQ)' : type}`}
+              {item ? `Edit ${type}: ${item.name}` : `Create New ${type}`}
             </h2>
             <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
-              {type === 'HO'
-                ? 'Apex Corporate HQ for Admin, Owner and Executive staff only (not visible to field force)'
-                : 'Configure hierarchical field territory parameters, parent linkages, and operating metadata.'}
+              Configure hierarchical field territory parameters, parent linkages, and operating metadata.
             </div>
           </div>
           <button
@@ -170,7 +165,7 @@ export function GeographyFormModal({
             <DivisionAndParentHierarchySection
               type={type}
               item={item}
-              isHoHq={isHoHq}
+              isHoHq={false}
               divisionId={f.divisionId}
               setDivisionId={f.handleDivisionChange}
               parentId={f.parentId}
@@ -186,7 +181,7 @@ export function GeographyFormModal({
             {/* Section 3: Identity & Details */}
             <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#0284c7', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🏷️</span> <span>{type === 'Zone' || isHoHq ? '1' : '3'}. {type === 'HO' ? 'Head Office' : type} Identity & Details</span>
+                <span>🏷️</span> <span>{type === 'Zone' ? '1' : '3'}. {type} Identity & Details</span>
               </div>
 
               {!item && (
@@ -197,7 +192,7 @@ export function GeographyFormModal({
 
               {item && (
                 <div style={{ marginBottom: '14px' }}>
-                  <TextField label={(type === 'HO' ? 'Head Office' : type) + ' Code (Immutable)'} value={f.code} disabled />
+                  <TextField label={type + ' Code (Immutable)'} value={f.code} disabled />
                 </div>
               )}
 
@@ -207,12 +202,11 @@ export function GeographyFormModal({
                   placeholder={'e.g. ' + (type === 'Area' ? 'Connaught Place' : 'Beat-1 (Market)')}
                   value={f.name}
                   onChange={(v) => { f.setName(v); f.setError(''); }}
-                  
                 />
               ) : (
                 <TextField
-                  label={(type === 'HO' ? 'Head Office' : type) + ' Name *'}
-                  placeholder={'Enter ' + (type === 'HO' ? 'Head Office (e.g. Corporate Super HQ)' : type + ' Name')}
+                  label={type + ' Name *'}
+                  placeholder={'Enter ' + type + ' Name'}
                   value={f.name}
                   onChange={(v) => { f.setName(v); f.setError(''); }}
                 />
@@ -231,8 +225,8 @@ export function GeographyFormModal({
               </div>
             </div>
 
-            {/* HQ / HO Specific Parameters */}
-            {(type === 'HQ' || type === 'HO') && (
+            {/* Field HQ Specific Parameters */}
+            {type === 'HQ' && (
               <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <HqFormSection
                   hqType={f.hqType}
@@ -323,7 +317,7 @@ export function GeographyFormModal({
                   boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
                 }}
               >
-                {f.saving ? 'Saving...' : item ? 'Update ' + (type === 'HO' ? 'Head Office' : type) : 'Save ' + (type === 'HO' ? 'Head Office' : type)}
+                {f.saving ? 'Saving...' : item ? 'Update ' + type : 'Save ' + type}
               </button>
             </div>
           </div>

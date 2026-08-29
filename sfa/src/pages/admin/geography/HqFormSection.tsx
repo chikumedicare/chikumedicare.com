@@ -50,108 +50,98 @@ export function HqFormSection({
   setDescription,
   hqs,
 }: HqFormSectionProps) {
-  const isHo = hqType === 'HO';
-
   return (
     <>
-      <Section title="3. Headquarter Type Classification">
+      <Section title="3. Field Headquarter Classification">
         <SelectField
-          label="Headquarter Type *"
-          value={hqType}
+          label="Field HQ Classification *"
+          value={hqType || 'HQ'}
           onChange={setHqType}
           options={[
-            { v: 'HQ', l: 'HQ - Field Headquarter' },
-            { v: 'HO', l: '🏢 HO - Head Office' },
+            { v: 'HQ', l: 'Standard Field Headquarter' },
+            { v: 'METRO', l: 'Metro / Major City Headquarter' },
+            { v: 'URBAN', l: 'Urban / Semi-Urban Headquarter' },
+            { v: 'RURAL', l: 'Rural / District Headquarter' },
           ]}
         />
-        {isHo && (
-          <div style={{ padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', marginTop: '12px', fontSize: '12px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span>🏢</span>
-            <span><b>HO (Head Office):</b> Corporate Head Office. Division, Parent State, and Postal fields are automatically disabled for HO.</span>
-          </div>
-        )}
       </Section>
 
-      {!isHo && (
-        <>
-          <Section title="4. Postal & Location Details">
-            <div className="two">
-              <TextField
-                label="City / Town Name"
-                value={city}
-                onChange={setCity}
-                placeholder="e.g. Bhopal"
-              />
-              <TextField
-                label="District Name"
-                value={district}
-                onChange={setDistrict}
-                placeholder="e.g. Bhopal District"
-              />
-            </div>
-            <div className="two" style={{ marginTop: '12px' }}>
-              <TextField
-                label="PIN Code (6 Digits)"
-                value={pinCode}
-                onChange={setPinCode}
-                placeholder="e.g. 462001"
-              />
-              <TextField
-                label="Display Sequence Order"
-                value={displayOrder}
-                onChange={setDisplayOrder}
-                placeholder="e.g. 1"
-                type="number"
-              />
-            </div>
-          </Section>
+      <Section title="4. Postal & Location Details">
+        <div className="two">
+          <TextField
+            label="City / Town Name *"
+            value={city}
+            onChange={setCity}
+            placeholder="e.g. Bhopal"
+          />
+          <TextField
+            label="District Name"
+            value={district}
+            onChange={setDistrict}
+            placeholder="e.g. Bhopal District"
+          />
+        </div>
+        <div className="two" style={{ marginTop: '12px' }}>
+          <TextField
+            label="PIN Code (6 Digits)"
+            value={pinCode}
+            onChange={setPinCode}
+            placeholder="e.g. 462001"
+          />
+          <TextField
+            label="Display Sequence Order"
+            value={displayOrder}
+            onChange={setDisplayOrder}
+            placeholder="e.g. 1"
+            type="number"
+          />
+        </div>
+      </Section>
 
-          <Section title="5. Shared / Pool HQ & Geolocation">
-            <div className="two">
-              <SelectField
-                label="Pool / Shared HQ Structure"
-                value={isPoolHq}
-                onChange={setIsPoolHq}
-                options={[
-                  { v: '0', l: 'Standalone Independent HQ' },
-                  { v: '1', l: 'Shared / Pool Headquarter' },
-                ]}
-              />
-              {isPoolHq === '1' && (
-                <SelectField
-                  label="Parent Pool Headquarter"
-                  value={parentPoolHqId}
-                  onChange={setParentPoolHqId}
-                  options={hqs.map((h) => ({ v: h.id, l: h.code + ' - ' + h.name }))}
-                />
-              )}
-            </div>
-            <div className="two" style={{ marginTop: '12px' }}>
-              <TextField
-                label="GPS Latitude (Optional)"
-                value={latitude}
-                onChange={setLatitude}
-                placeholder="e.g. 23.2599"
-              />
-              <TextField
-                label="GPS Longitude (Optional)"
-                value={longitude}
-                onChange={setLongitude}
-                placeholder="e.g. 77.4126"
-              />
-            </div>
-          </Section>
-
-          <Section title="6. Territory Scope & Notes">
-            <TextField
-              label="Territory Description & Boundaries"
-              value={description}
-              onChange={setDescription}
-              placeholder="e.g. Covers Bhopal North, South, and Mandideep industrial belt."
+      <Section title="5. Shared / Pool HQ & Geolocation">
+        <div className="two">
+          <SelectField
+            label="Pool / Shared HQ Structure"
+            value={isPoolHq}
+            onChange={setIsPoolHq}
+            options={[
+              { v: '0', l: 'Standalone Independent Field HQ' },
+              { v: '1', l: 'Shared / Pool Field Headquarter' },
+            ]}
+          />
+          {isPoolHq === '1' && (
+            <SelectField
+              label="Parent Pool Headquarter"
+              value={parentPoolHqId}
+              onChange={setParentPoolHqId}
+              options={hqs.map((h) => ({ v: h.id, l: h.code + ' - ' + h.name }))}
             />
-          </Section>
-        </>
-      )}
+          )}
+        </div>
+        <div className="two" style={{ marginTop: '12px' }}>
+          <TextField
+            label="GPS Latitude (Optional)"
+            value={latitude}
+            onChange={setLatitude}
+            placeholder="e.g. 23.2599"
+          />
+          <TextField
+            label="GPS Longitude (Optional)"
+            value={longitude}
+            onChange={setLongitude}
+            placeholder="e.g. 77.4126"
+          />
+        </div>
+      </Section>
+
+      <Section title="6. Field Territory Scope & Boundaries">
+        <TextField
+          label="Territory Coverage & Operating Boundaries"
+          value={description}
+          onChange={setDescription}
+          placeholder="e.g. Covers Indore City North, South, and Pithampur industrial belt."
+        />
+      </Section>
     </>
   );
 }

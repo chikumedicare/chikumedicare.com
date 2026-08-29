@@ -36,7 +36,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
             type="button"
             onClick={() => {
               this.setState({ hasError: false, error: null });
-              window.location.hash = 'employees';
+              window.location.hash = 'dashboard';
               window.location.reload();
             }}
             style={{ marginTop: '12px', padding: '8px 16px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
@@ -60,15 +60,12 @@ export function App() {
 
   const isAdminOrOwner = role === 'ADMIN' || role === 'OWNER' || currentUser?.role === 'ADMIN' || currentUser?.role === 'OWNER';
 
-  const [portalView, setPortalView] = useState<'HR' | 'OPERATIONS'>(() => (isAdminOrOwner ? 'HR' : 'OPERATIONS'));
-  const [_activeFolder, setActiveFolder] = useState<string | null>(() => (isAdminOrOwner ? 'hr' : 'master'));
-
   const [page, setPage] = useState<Page>(() => {
     const hash = window.location.hash.replace('#', '') as Page;
-    if (hash) return hash;
+    if (hash && hash !== 'hr-hub' && hash !== 'hr') return hash;
     const saved = localStorage.getItem('chiku_admin_active_page') as Page;
-    if (saved && saved !== 'hr-hub') return saved;
-    return isAdminOrOwner ? 'employees' : 'dashboard';
+    if (saved && saved !== 'hr-hub' && saved !== 'hr') return saved;
+    return 'dashboard';
   });
 
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -85,13 +82,9 @@ export function App() {
       const res = await verifySession();
       if (res && (res as any).success) {
         setLogged(true);
-        const userRole = (res as any).user?.role || role;
-        const isAdm = userRole === 'ADMIN' || userRole === 'OWNER';
         const hash = window.location.hash.replace('#', '') as Page;
         if (!hash || hash === 'hr-hub' || hash === 'hr') {
-          const defaultLanding: Page = isAdm ? 'employees' : 'dashboard';
-          open(defaultLanding);
-          setActiveFolder(isAdm ? 'hr' : 'master');
+          open('dashboard');
         }
       }
     };
@@ -139,13 +132,9 @@ export function App() {
   if (!logged) {
     return (
       <Login
-        onLogin={(loggedUser, _rememberMe, _selectedFy) => {
+        onLogin={(_loggedUser, _rememberMe, _selectedFy) => {
           setLogged(true);
-          const userRole = loggedUser?.role || role;
-          const isAdm = userRole === 'ADMIN' || userRole === 'OWNER';
-          const defaultLanding: Page = isAdm ? 'employees' : 'dashboard';
-          open(defaultLanding);
-          setActiveFolder(isAdm ? 'hr' : 'master');
+          open('dashboard');
         }}
       />
     );
@@ -156,9 +145,6 @@ export function App() {
       <TopNavbar
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
-        isAdminOrOwner={isAdminOrOwner}
-        portalView={portalView}
-        setPortalView={setPortalView}
         open={open}
         activeFY={activeFY}
         isReadOnly={isReadOnly}
@@ -166,20 +152,16 @@ export function App() {
         role={role}
         hqName={hqName}
         reportingTo={reportingTo}
-        setActiveFolder={setActiveFolder}
       />
 
       <div className="app-body-container">
         <AppSidebar
           menuOpen={menuOpen}
           isAdminOrOwner={isAdminOrOwner}
-          portalView={portalView}
-          setPortalView={setPortalView}
           page={page}
           open={open}
           logout={logout}
           setLogged={setLogged}
-          setActiveFolder={setActiveFolder}
         />
 
         <main className="main-workspace-area">

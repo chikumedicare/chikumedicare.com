@@ -4,9 +4,6 @@ import type { Page } from '../../types';
 interface TopNavbarProps {
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
-  isAdminOrOwner: boolean;
-  portalView: 'HR' | 'OPERATIONS';
-  setPortalView: (view: 'HR' | 'OPERATIONS') => void;
   open: (p: Page) => void;
   activeFY: string;
   isReadOnly: boolean;
@@ -14,15 +11,11 @@ interface TopNavbarProps {
   role: string;
   hqName: string;
   reportingTo: string;
-  setActiveFolder: (f: string | null) => void;
 }
 
 export function TopNavbar({
   menuOpen,
   setMenuOpen,
-  isAdminOrOwner,
-  portalView,
-  setPortalView,
   open,
   activeFY,
   isReadOnly,
@@ -30,16 +23,15 @@ export function TopNavbar({
   role,
   hqName,
   reportingTo,
-  setActiveFolder,
 }: TopNavbarProps) {
   return (
     <header className="main-top-navbar">
       <div className="nav-left-brand-group">
         <div
           className="brand-header-row"
-          onClick={() => open(isAdminOrOwner ? 'employees' : 'dashboard')}
+          onClick={() => open('dashboard')}
           style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', userSelect: 'none' }}
-          title={isAdminOrOwner ? 'Go to Employee Master' : 'Go to Executive Dashboard'}
+          title="Go to Executive Dashboard"
         >
           <img
             src="/logo.png"
@@ -74,42 +66,6 @@ export function TopNavbar({
           <span>Menu</span>
           <span className={`chevron-icon ${menuOpen ? 'open' : ''}`}>❯</span>
         </button>
-
-        {/* 🧭 Jump Switcher Button in Header for Admin/Owner */}
-        {isAdminOrOwner && (
-          <button
-            type="button"
-            onClick={() => {
-              if (portalView === 'HR') {
-                setPortalView('OPERATIONS');
-                open('dashboard');
-                setActiveFolder('master');
-              } else {
-                setPortalView('HR');
-                open('employees');
-                setActiveFolder('hr');
-              }
-            }}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '7px 14px',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: 700,
-              background: portalView === 'OPERATIONS' ? '#2563eb' : 'rgba(59, 130, 246, 0.15)',
-              color: portalView === 'OPERATIONS' ? '#ffffff' : '#60a5fa',
-              border: portalView === 'OPERATIONS' ? '1px solid #3b82f6' : '1px solid rgba(59, 130, 246, 0.35)',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            title={portalView === 'HR' ? "Jump to Operations Modules (Masters, Transactions, Reports, Approvals)" : "Return to HR & Personnel Screen"}
-          >
-            <span>{portalView === 'HR' ? '🧭 Jump to Operations Modules' : '👥 Jump to HR & Personnel'}</span>
-            <span style={{ fontSize: '12px' }}>➔</span>
-          </button>
-        )}
       </div>
 
       {/* Top Header Right Status Badges & Controls */}

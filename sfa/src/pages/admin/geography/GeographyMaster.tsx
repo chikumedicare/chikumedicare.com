@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useGeographyStore, type TerritoryType } from '../../../store/hr/useGeographyStore';
 import type { Zone, State, Headquarter, Area, Beat } from '../../../core/domain/hr/geography.types';
+import type { HeadOfficeRecord } from '../../../core/domain/hr/headOfficeTerritory.types';
 import { useHeadOfficeStore } from '../../../store/hr/useHeadOfficeStore';
 import { useAuthSessionStore } from '../../../store/hr/useAuthSessionStore';
 import { GeographyTable, type TerritoryItem } from './GeographyTable';
 import { GeographyFormModal } from './GeographyFormModal';
+import { HeadOfficeFormModal } from './HeadOfficeFormModal';
 
 interface GeographyMasterProps {
   onAddTerritory?: (type: TerritoryType) => void;
@@ -17,10 +19,13 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
   const [status, setStatus] = useState('ALL');
   const [parentFilter, setParentFilter] = useState('ALL');
 
-  // Internal modal state for seamless 1-click Add/Edit
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState<TerritoryType>('HO');
-  const [editingItem, setEditingItem] = useState<TerritoryItem | null>(null);
+  // Modal states: simplified modal for HO, standard modal for Field Geography
+  const [hoModalOpen, setHoModalOpen] = useState(false);
+  const [editingHoItem, setEditingHoItem] = useState<HeadOfficeRecord | null>(null);
+
+  const [fieldModalOpen, setFieldModalOpen] = useState(false);
+  const [fieldModalType, setFieldModalType] = useState<TerritoryType>('Zone');
+  const [editingFieldItem, setEditingFieldItem] = useState<Zone | State | Headquarter | Area | Beat | null>(null);
 
   const { role, divisionId: sessionDivisionId } = useAuthSessionStore();
   const { divisions } = useHeadOfficeStore();
@@ -31,16 +36,17 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
   );
 
   const {
+    headOffices,
     zones,
     states,
     hqs,
-    headOffices,
-    fieldHqs,
     areas,
     beats,
     getZoneName,
     getStateName,
     getHqName,
+    addOrUpdateHeadOffice,
+    toggleHeadOfficeStatus,
     addOrUpdateTerritory,
     toggleTerritoryStatus,
   } = useGeographyStore();
@@ -49,7 +55,7 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
     HO: headOffices,
     Zone: zones,
     State: states,
-    HQ: fieldHqs,
+    HQ: hqs,
     Area: areas,
     Beat: beats,
   };
@@ -57,8 +63,8 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
   const rawList = map[tab] || [];
 
   const filtered = rawList.filter((item) => {
-    // Division filter
-    if (activeDivisionId && item.divisionId && item.divisionId !== activeDivisionId) {
+    // Division filter (HO has no division requirement)
+    if (tab !== 'HO' && activeDivisionId && (item as Zone).divisionId && (item as Zone).divisionId !== activeDivisionId) {
       return false;
     }
     // Search query
@@ -71,8 +77,9 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
     if (!matchesQ) return false;
 
     // Status filter
-    if (status === 'ACTIVE' && !item.isActive) return false;
-    if (status === 'INACTIVE' && item.isActive) return false;
+    const isItemActive = tab === 'HO' ? Boolean((item as HeadOfficeRecord).is_active) : Boolean((item as Zone | State | Headquarter | Area | Beat).isActive);
+    if (status === 'ACTIVE' && !isItemActive) return false;
+    if (status === 'INACTIVE' && isItemActive) return false;
 
     // Parent filter
     if (parentFilter !== 'ALL') {
@@ -85,22 +92,36 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
   });
 
   const handleOpenAdd = () => {
-    if (onAddTerritory) {
+    if (tab === 'HO') {
+      setEditingHoItem(null);
+      setHoModalOpen(true);
+    } else if (onAddTerritory) {
       onAddTerritory(tab);
     } else {
-      setEditingItem(null);
-      setModalType(tab);
-      setModalOpen(true);
+      setEditingFieldItem(null);
+      setFieldModalType(tab);
+      setFieldModalOpen(true);
     }
   };
 
   const handleOpenEdit = (item: TerritoryItem) => {
-    if (onEditTerritory) {
+    if (tab === 'HO') {
+      setEditingHoItem(item as HeadOfficeRecord);
+      setHoModalOpen(true);
+    } else if (onEditTerritory) {
       onEditTerritory(tab, item);
     } else {
-      setEditingItem(item);
-      setModalType(tab);
-      setModalOpen(true);
+      setEditingFieldItem(item as Zone | State | Headquarter | Area | Beat);
+      setFieldModalType(tab);
+      setFieldModalOpen(true);
+    }
+  };
+
+  const handleToggle = (item: TerritoryItem) => {
+    if (tab === 'HO') {
+      toggleHeadOfficeStatus(item as HeadOfficeRecord);
+    } else {
+      toggleTerritoryStatus(tab, item as Zone | State | Headquarter | Area | Beat);
     }
   };
 
@@ -108,7 +129,7 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
     { key: 'HO', label: 'Head Office (HO)', icon: '🏢', badge: headOffices.length },
     { key: 'Zone', label: 'Zones', icon: '🌐', badge: zones.length },
     { key: 'State', label: 'States', icon: '🗺️', badge: states.length },
-    { key: 'HQ', label: 'Field HQs', icon: '📍', badge: fieldHqs.length },
+    { key: 'HQ', label: 'Field HQs', icon: '📍', badge: hqs.length },
     { key: 'Area', label: 'Areas', icon: '🏙️', badge: areas.length },
     { key: 'Beat', label: 'Beats', icon: '🛣️', badge: beats.length },
   ];
@@ -131,7 +152,9 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
             Field Geography Master
           </h2>
           <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-            Apex Corporate Head Office (HO), Zones, States, Field HQs, Areas, and Daily Beats
+            {tab === 'HO'
+              ? 'Apex Corporate Head Office (HO) Management — Dedicated for Admin, Owner and Executive leadership'
+              : 'Configure hierarchical field territories, parent linkages, and operating metadata'}
           </p>
         </div>
 
@@ -255,7 +278,7 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
         </div>
       </div>
 
-      {/* Geography Data Table - Starts immediately near the top */}
+      {/* Geography Data Table */}
       <GeographyTable
         tab={tab}
         items={filtered}
@@ -263,27 +286,38 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
         getStateName={getStateName}
         getHqName={getHqName}
         onEdit={handleOpenEdit}
-        onToggleStatus={(item) => toggleTerritoryStatus(tab, item)}
+        onToggleStatus={handleToggle}
         onAdd={handleOpenAdd}
       />
 
-      {/* Embedded Form Modal */}
-      {modalOpen && (
+      {/* 🏢 Simplified Head Office Form Modal (Dedicated for HO Table) */}
+      {hoModalOpen && (
+        <HeadOfficeFormModal
+          item={editingHoItem}
+          onSave={async (draft) => {
+            const res = await addOrUpdateHeadOffice(draft);
+            if (res.success) setHoModalOpen(false);
+            return res;
+          }}
+          back={() => setHoModalOpen(false)}
+        />
+      )}
+
+      {/* 🗺️ Standard Field Geography Form Modal (For Zone, State, HQ, Area, Beat) */}
+      {fieldModalOpen && (
         <GeographyFormModal
-          type={modalType}
-          item={editingItem}
+          type={fieldModalType}
+          item={editingFieldItem}
           zones={zones}
           states={states}
           hqs={hqs}
           areas={areas}
           onSave={async (draft) => {
-            const res = await addOrUpdateTerritory(modalType, draft);
-            if (res.success) {
-              setModalOpen(false);
-            }
+            const res = await addOrUpdateTerritory(fieldModalType, draft);
+            if (res.success) setFieldModalOpen(false);
             return res;
           }}
-          back={() => setModalOpen(false)}
+          back={() => setFieldModalOpen(false)}
         />
       )}
     </div>

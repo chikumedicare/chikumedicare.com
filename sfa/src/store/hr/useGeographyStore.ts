@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import type { Zone, State, Headquarter, Area, Beat } from '../../core/domain/hr/geography.types';
 import { GatewayContainer } from '../../core/container/GatewayContainer';
 
-export type TerritoryType = 'Zone' | 'State' | 'HQ' | 'Area' | 'Beat';
+export type TerritoryType = 'HO' | 'Zone' | 'State' | 'HQ' | 'Area' | 'Beat';
 
 export function useGeographyStore() {
   const [zones, setZones] = useState<Zone[]>([]);
@@ -46,7 +46,7 @@ export function useGeographyStore() {
       }
     } catch (e: unknown) {
       console.error('[useGeographyStore] Live geography fetch error:', e);
-      setError((e as any)?.error || (e as any)?.message || 'Failed to fetch geography data');
+      setError((e as { error?: string; message?: string })?.error || (e as { message?: string })?.message || 'Failed to fetch geography data');
     } finally {
       setLoading(false);
     }
@@ -66,6 +66,7 @@ export function useGeographyStore() {
         setLoading(true);
         if (draft.id) {
           // Edit Mode
+          if (type === 'HO') await geoGateway.updateHq(draft.id, { ...draft, isSuperHq: true, hqType: 'HEAD_OFFICE' });
           if (type === 'Zone') await geoGateway.updateZone(draft.id, draft);
           if (type === 'State') await geoGateway.updateState(draft.id, draft);
           if (type === 'HQ') await geoGateway.updateHq(draft.id, draft);
@@ -73,6 +74,7 @@ export function useGeographyStore() {
           if (type === 'Beat') await geoGateway.updateBeat(draft.id, draft);
         } else {
           // Create Mode
+          if (type === 'HO') await geoGateway.createHq({ ...draft, isSuperHq: true, hqType: 'HEAD_OFFICE' });
           if (type === 'Zone') await geoGateway.createZone(draft);
           if (type === 'State') await geoGateway.createState(draft);
           if (type === 'HQ') await geoGateway.createHq(draft);
@@ -95,9 +97,9 @@ export function useGeographyStore() {
       try {
         setLoading(true);
         const newActive = !item.isActive;
+        if (type === 'HO' || type === 'HQ') await geoGateway.updateHq(item.id, { isActive: newActive });
         if (type === 'Zone') await geoGateway.updateZone(item.id, { isActive: newActive });
         if (type === 'State') await geoGateway.updateState(item.id, { isActive: newActive });
-        if (type === 'HQ') await geoGateway.updateHq(item.id, { isActive: newActive });
         if (type === 'Area') await geoGateway.updateArea(item.id, { isActive: newActive });
         if (type === 'Beat') await geoGateway.updateBeat(item.id, { isActive: newActive });
         await refresh();
@@ -130,7 +132,8 @@ export function useGeographyStore() {
   const getHqName = useCallback(
     (id?: string) => {
       if (!id) return '-';
-      return hqs.find((h) => h.id === id)?.name || id;
+      const found = hqs.find((h) => h.id === id);
+      return found?.name || found?.hq_name || id;
     },
     [hqs]
   );
@@ -138,7 +141,8 @@ export function useGeographyStore() {
   const getStateName = useCallback(
     (id?: string) => {
       if (!id) return '-';
-      return states.find((s) => s.id === id)?.name || id;
+      const found = states.find((s) => s.id === id);
+      return found?.name || found?.state_name || id;
     },
     [states]
   );
@@ -146,18 +150,24 @@ export function useGeographyStore() {
   const getZoneName = useCallback(
     (id?: string) => {
       if (!id) return '-';
-      return zones.find((z) => z.id === id)?.name || id;
+      const found = zones.find((z) => z.id === id);
+      return found?.name || found?.zone_name || id;
     },
     [zones]
   );
+
+  // Separate Head Offices (HO) from regional Field HQs
+  const headOffices = hqs.filter((h) => h.isSuperHq || h.hqType === 'HEAD_OFFICE' || h.hqType === 'HO');
+  const fieldHqs = hqs.filter((h) => !h.isSuperHq && h.hqType !== 'HEAD_OFFICE' && h.hqType !== 'HO');
 
   return {
     zones,
     states,
     hqs,
+    headOffices,
+    fieldHqs,
     areas,
     beats,
-    selectedDivisionId,
     loading,
     error,
     refresh,

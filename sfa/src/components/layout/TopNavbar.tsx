@@ -47,24 +47,31 @@ export function TopNavbar({
           />
         </div>
 
-        {/* 📂 Menu Toggle Button in Header */}
+        {/* ☰ 3-Line Hamburger Menu Toggle (Clean White Icon, Transparent Background) */}
         <button
           type="button"
-          className={`top-menu-dropdown-btn ${menuOpen ? 'active-open' : ''}`}
           onClick={() => setMenuOpen(!menuOpen)}
+          title="Toggle Navigation Menu"
+          aria-label="Toggle Navigation Menu"
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '7px 16px',
-            fontWeight: 700,
-            letterSpacing: '0.4px',
-            borderRadius: '10px',
+            justifyContent: 'center',
+            background: 'transparent',
+            border: 'none',
+            padding: '6px 8px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            outline: 'none',
+            boxShadow: 'none',
+            transition: 'background 0.15s ease',
           }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.12)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
         >
-          <span style={{ fontSize: '15px' }}>☰</span>
-          <span>Menu</span>
-          <span className={`chevron-icon ${menuOpen ? 'open' : ''}`}>❯</span>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 6H20M4 12H20M4 18H20" stroke="#ffffff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
       </div>
 

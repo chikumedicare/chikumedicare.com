@@ -35,6 +35,7 @@ export function GeographyFormModal({
   const f = useGeographyForm(type, item, zones, states, hqs, areas, onSave, back);
 
   const prefixHint: Record<TerritoryType, string> = {
+    HO: 'HO### (e.g. HO001, HO002...)',
     Zone: 'ZN### (e.g. ZN001, ZN002...)',
     State: 'ST### (e.g. ST001, ST002...)',
     HQ: 'HQ### (e.g. HQ001, HQ002...)',
@@ -47,7 +48,7 @@ export function GeographyFormModal({
   const filteredHqs = hqs.filter((h) => !f.divisionId || h.divisionId === f.divisionId);
   const filteredAreas = areas.filter((a) => !f.divisionId || a.divisionId === f.divisionId);
 
-  const isHoHq = type === 'HQ' && f.hqType === 'HO';
+  const isHoHq = (type === 'HQ' && f.hqType === 'HO') || type === 'HO';
 
   return (
     <div
@@ -86,30 +87,15 @@ export function GeographyFormModal({
             borderBottom: '1px solid #e2e8f0',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '10px',
-                background: '#e0f2fe',
-                color: '#0284c7',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '20px',
-                fontWeight: 'bold',
-              }}
-            >
-              🗺️
-            </div>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
-                {item ? 'Edit ' + type + ': ' + item.name + ' (' + item.code + ')' : 'Add New ' + type}
-              </h3>
-              <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-                Field Geography Master • Territory Setup & Parent Hierarchy Mapping
-              </p>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+              {type === 'HO' ? '🏢 ' : ''}
+              {item ? `Edit ${type === 'HO' ? 'Head Office' : type}: ${item.name}` : `Create New ${type === 'HO' ? 'Head Office (Corporate HQ)' : type}`}
+            </h2>
+            <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+              {type === 'HO'
+                ? 'Apex Corporate HQ for Admin, Owner and Executive staff only (not visible to field force)'
+                : 'Configure hierarchical field territory parameters, parent linkages, and operating metadata.'}
             </div>
           </div>
           <button
@@ -118,31 +104,55 @@ export function GeographyFormModal({
             style={{
               background: '#f1f5f9',
               border: 'none',
-              borderRadius: '50%',
-              width: '32px',
-              height: '32px',
-              fontSize: '16px',
-              cursor: 'pointer',
-              color: '#64748b',
+              borderRadius: '8px',
+              width: '36px',
+              height: '36px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#64748b',
+              fontWeight: 700,
+              fontSize: '18px',
             }}
           >
             ✕
           </button>
         </div>
 
-        {/* Top Error Alert Banner */}
+        {/* Dynamic Context Breadcrumb */}
+        {f.contextLocation && (
+          <div
+            style={{
+              padding: '10px 14px',
+              background: '#f0f9ff',
+              border: '1px solid #bae6fd',
+              borderRadius: '8px',
+              marginBottom: '18px',
+              fontSize: '13px',
+              color: '#0369a1',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <span>📍</span>
+            <span>
+              <b>Parent Context:</b> {f.contextLocation}
+            </span>
+          </div>
+        )}
+
+        {/* Global Error Banner */}
         {f.error && (
           <div
             style={{
-              marginBottom: '18px',
               padding: '12px 16px',
               background: '#fef2f2',
               border: '1px solid #fecaca',
-              borderRadius: '10px',
-              color: '#b91c1c',
+              borderRadius: '8px',
+              marginBottom: '20px',
+              color: '#dc2626',
               fontSize: '13px',
               fontWeight: 600,
               display: 'flex',
@@ -162,7 +172,7 @@ export function GeographyFormModal({
               item={item}
               isHoHq={isHoHq}
               divisionId={f.divisionId}
-              setDivisionId={f.setDivisionId}
+              setDivisionId={f.handleDivisionChange}
               parentId={f.parentId}
               setParentId={f.setParentId}
               setError={f.setError}
@@ -176,7 +186,7 @@ export function GeographyFormModal({
             {/* Section 3: Identity & Details */}
             <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#0284c7', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🏷️</span> <span>{type === 'Zone' || isHoHq ? '1' : '3'}. {type} Identity & Details</span>
+                <span>🏷️</span> <span>{type === 'Zone' || isHoHq ? '1' : '3'}. {type === 'HO' ? 'Head Office' : type} Identity & Details</span>
               </div>
 
               {!item && (
@@ -187,31 +197,42 @@ export function GeographyFormModal({
 
               {item && (
                 <div style={{ marginBottom: '14px' }}>
-                  <TextField label={type + ' Code (Immutable)'} value={f.code} disabled />
+                  <TextField label={(type === 'HO' ? 'Head Office' : type) + ' Code (Immutable)'} value={f.code} disabled />
                 </div>
               )}
 
               {type === 'Area' || type === 'Beat' ? (
                 <LocalityAutocompleteField
                   label={type + ' Name *'}
+                  placeholder={'e.g. ' + (type === 'Area' ? 'Connaught Place' : 'Beat-1 (Market)')}
                   value={f.name}
                   onChange={(v) => { f.setName(v); f.setError(''); }}
-                  placeholder="Pick from popular localities or type..."
                   
-                  isBeat={type === 'Beat'}
                 />
               ) : (
                 <TextField
-                  label={type + ' Name *'}
+                  label={(type === 'HO' ? 'Head Office' : type) + ' Name *'}
+                  placeholder={'Enter ' + (type === 'HO' ? 'Head Office (e.g. Corporate Super HQ)' : type + ' Name')}
                   value={f.name}
                   onChange={(v) => { f.setName(v); f.setError(''); }}
-                  placeholder={'Enter ' + type + ' Name (e.g. Bhopal - HO)'}
                 />
               )}
+
+              <div style={{ marginTop: '14px' }}>
+                <SelectField
+                  label="Operational Status *"
+                  value={f.isActive}
+                  onChange={(v) => f.setIsActive(v)}
+                  options={[
+                    { v: 'ACTIVE', l: '🟢 Active & Functional' },
+                    { v: 'INACTIVE', l: '🔴 Inactive / Blocked' },
+                  ]}
+                />
+              </div>
             </div>
 
-            {/* HQ / Area / Beat Specific Parameters */}
-            {type === 'HQ' && (
+            {/* HQ / HO Specific Parameters */}
+            {(type === 'HQ' || type === 'HO') && (
               <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <HqFormSection
                   hqType={f.hqType}
@@ -239,7 +260,8 @@ export function GeographyFormModal({
               </div>
             )}
 
-            {type !== 'HQ' && (
+            {/* Area / Beat Specific Parameters */}
+            {(type === 'Area' || type === 'Beat') && (
               <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <AreaBeatFormSection
                   type={type}
@@ -259,42 +281,51 @@ export function GeographyFormModal({
               </div>
             )}
 
-            {/* Operational Status */}
-            <div style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#0284c7', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>🟢</span> <span>Operational Status</span>
-              </div>
-              <SelectField
-                label="Lifecycle Status"
-                value={f.isActive}
-                onChange={f.setIsActive}
-                options={[
-                  { v: 'ACTIVE', l: 'ACTIVE (Operational)' },
-                  { v: 'INACTIVE', l: 'INACTIVE (Disabled / Retired)' },
-                ]}
-              />
+            {/* Modal Action Controls */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '12px',
+                paddingTop: '16px',
+                borderTop: '1px solid #e2e8f0',
+              }}
+            >
+              <button
+                type="button"
+                onClick={back}
+                disabled={f.saving}
+                style={{
+                  padding: '10px 20px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  background: '#ffffff',
+                  color: '#475569',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={f.saving}
+                style={{
+                  padding: '10px 24px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: f.saving ? '#94a3b8' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  cursor: f.saving ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
+                }}
+              >
+                {f.saving ? 'Saving...' : item ? 'Update ' + (type === 'HO' ? 'Head Office' : type) : 'Save ' + (type === 'HO' ? 'Head Office' : type)}
+              </button>
             </div>
-          </div>
-
-          {/* Footer Action Bar */}
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-            <button
-              type="button"
-              className="secondary"
-              onClick={back}
-              disabled={f.saving}
-              style={{ padding: '9px 22px', fontSize: '13px', fontWeight: 600 }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="primary"
-              disabled={f.saving}
-              style={{ padding: '9px 26px', fontSize: '13px', fontWeight: 700, background: '#0284c7', borderColor: '#0284c7' }}
-            >
-              {f.saving ? 'Saving...' : item ? 'Save ' + type + ' Changes' : 'Create ' + type}
-            </button>
           </div>
         </form>
       </div>

@@ -1,5 +1,5 @@
 import type { Beat } from '../../../core/domain/hr/geography.types';
-﻿import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { TerritoryType } from '../../../store/hr/useGeographyStore';
 import type { Zone, State, Headquarter, Area } from '../../../core/domain/hr/geography.types';
 
@@ -17,11 +17,11 @@ export function useGeographyForm(
   const [code, setCode] = useState(item?.code || '');
   const [name, setName] = useState(item?.name || '');
   const [parentId, setParentId] = useState('');
-  const [isActive, setIsActive] = useState(item ? (item.isActive ? 'ACTIVE' : 'INACTIVE') : 'ACTIVE');
+  const [isActive, setIsActive] = useState('ACTIVE');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // HQ Fields
+  // HQ & HO Fields
   const [hqType, setHqType] = useState('HQ');
   const [city, setCity] = useState('');
   const [district, setDistrict] = useState('');
@@ -49,9 +49,9 @@ export function useGeographyForm(
       setDisplayOrder(String(item.displayOrder || 0));
 
       if (type === 'State') setParentId(item.zoneId || '');
-      if (type === 'HQ') {
+      if (type === 'HQ' || type === 'HO') {
         setParentId(item.stateId || '');
-        setHqType(item.hqType || 'HQ');
+        setHqType(type === 'HO' ? 'HEAD_OFFICE' : (item.hqType || 'HQ'));
         setCity(item.city || '');
         setDistrict(item.district || '');
         setPinCode(item.pinCode || '');
@@ -77,8 +77,8 @@ export function useGeographyForm(
       setIsActive('ACTIVE');
       setDescription('');
       setDisplayOrder('0');
-      if (type === 'HQ') {
-        setHqType('HQ');
+      if (type === 'HQ' || type === 'HO') {
+        setHqType(type === 'HO' ? 'HEAD_OFFICE' : 'HQ');
         setCity('');
         setDistrict('');
         setPinCode('');
@@ -119,16 +119,16 @@ export function useGeographyForm(
   }, [type, parentId, hqs, states, areas]);
 
   const handleSubmit = async () => {
-    const isHoHq = type === 'HQ' && hqType === 'HO';
-    if (!divisionId && !isHoHq) {
+    const isHo = type === 'HO';
+    if (!divisionId && !isHo) {
       setError('Division is required');
       return;
     }
     if (!name.trim()) {
-      setError(`${type} Name is required`);
+      setError(`${type === 'HO' ? 'Head Office' : type} Name is required`);
       return;
     }
-    if (type !== 'Zone' && !parentId && !isHoHq) {
+    if (type !== 'Zone' && !isHo && !parentId) {
       setError('Parent selection is required for ' + type);
       return;
     }
@@ -139,16 +139,17 @@ export function useGeographyForm(
     const draft: Partial<Zone | State | Headquarter | Area | Beat> = {
       ...(item?.id ? { id: item.id, code: item.code } : {}),
       name: name.trim(),
-      divisionId,
+      divisionId: divisionId || undefined,
       isActive: isActive === 'ACTIVE',
       description: description.trim() || undefined,
       displayOrder: Number(displayOrder) || 0,
     };
 
     if (type === 'State') draft.zoneId = parentId;
-    if (type === 'HQ') {
-      draft.stateId = parentId;
-      draft.hqType = hqType;
+    if (type === 'HQ' || type === 'HO') {
+      draft.stateId = parentId || undefined;
+      draft.hqType = type === 'HO' ? 'HEAD_OFFICE' : hqType;
+      draft.isSuperHq = type === 'HO';
       draft.city = city.trim() || undefined;
       draft.district = district.trim() || undefined;
       draft.pinCode = pinCode.trim() || undefined;
@@ -181,14 +182,47 @@ export function useGeographyForm(
   };
 
   return {
-    divisionId, setDivisionId: handleDivisionChange,
-    code, name, setName, parentId, setParentId, isActive, setIsActive,
-    error, setError, saving, contextLocation, handleSubmit,
-    hqType, setHqType, city, setCity, district, setDistrict, pinCode, setPinCode,
-    isPoolHq, setIsPoolHq, parentPoolHqId, setParentPoolHqId,
-    latitude, setLatitude, longitude, setLongitude,
-    territoryType, setTerritoryType, travelMode, setTravelMode,
-    bothSideAllowed, setBothSideAllowed, beatType, setBeatType,
-    displayOrder, setDisplayOrder, description, setDescription,
+    divisionId,
+    code,
+    name,
+    setName,
+    parentId,
+    setParentId,
+    isActive,
+    setIsActive,
+    error,
+    setError,
+    saving,
+    hqType,
+    setHqType,
+    city,
+    setCity,
+    district,
+    setDistrict,
+    pinCode,
+    setPinCode,
+    isPoolHq,
+    setIsPoolHq,
+    parentPoolHqId,
+    setParentPoolHqId,
+    latitude,
+    setLatitude,
+    longitude,
+    setLongitude,
+    territoryType,
+    setTerritoryType,
+    travelMode,
+    setTravelMode,
+    bothSideAllowed,
+    setBothSideAllowed,
+    beatType,
+    setBeatType,
+    displayOrder,
+    setDisplayOrder,
+    description,
+    setDescription,
+    handleDivisionChange,
+    contextLocation,
+    handleSubmit,
   };
 }

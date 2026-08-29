@@ -31,7 +31,14 @@ These rules are mandatory and must be strictly followed by the AI Agent across a
 
 ---
 
-## 4. Targeted & Efficient Testing (No Token Waste)
+## 4. Strict Scope Isolation (Zero Unrelated File Edits)
+- **Minimal Blast Radius**: Only modify the specific file being worked on and its directly related dependencies.
+- **No Drive-By Refactoring**: Never touch, reformat, or alter unrelated files, modules, or configurations that are outside the explicit scope of the current task.
+- Ensure all changes are surgical, tightly scoped, and do not inadvertently break adjacent features.
+
+---
+
+## 5. Targeted & Efficient Testing (No Token Waste)
 - **Focused Verification**:
   - Test only what was actually edited.
   - Do NOT run heavy, multi-step browser subagents or full-suite recordings for trivial CSS tweaks, text changes, or minor layout adjustments.
@@ -39,7 +46,7 @@ These rules are mandatory and must be strictly followed by the AI Agent across a
 
 ---
 
-## 5. Zero Regressions & Integrity Guarantee
+## 6. Zero Regressions & Integrity Guarantee
 - Every change must compile cleanly with `tsc -b && vite build` (0 errors).
 - All backend Vitest suites must pass with 100% success.
 - Changes must be cleanly committed and pushed to `origin/main` when completed.

@@ -281,7 +281,7 @@ export class DataQueryBuilder {
           query += ` AND ${hqCol} IN (${placeholders})`;
           queryParams.push(...scopeResult.targetHqIds);
         }
-      } else if (collection !== 'divisions' && collection !== 'zones' && collection !== 'states' && collection !== 'holidays' && collection !== 'products' && collection !== 'sfc_rates' && collection !== 'da_rates') {
+      } else if (collection !== 'divisions' && collection !== 'zones' && collection !== 'states' && collection !== 'holidays' && collection !== 'products' && collection !== 'sfc_rates' && collection !== 'da_rates' && collection !== 'head_office' && collection !== 'head_offices') {
         // Unrestricted admin or master table with optional client filter
         if (hqIdsParam && hqIdsParam.trim().length > 0) {
           const ids = hqIdsParam.split(',').map((s) => s.trim()).filter(Boolean);

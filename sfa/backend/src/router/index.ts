@@ -101,7 +101,7 @@ export class Router {
 									'targets', 'employees', 'divisions', 'doctors', 'chemists', 'stockists',
 									'sfc_rates', 'da_rates', 'leave_applications', 'leave_allocations', 'expenses',
 									'payroll', 'loans', 'user_history', 'role_change_history', 'audit_logs',
-									'login_history', 'user_covering_hq', 'user_covering_area', 'approvals'
+									'login_history', 'user_covering_hq', 'user_covering_area', 'approvals', 'head_office', 'head_offices'
 								];
 								if (!readOnlyBypass.includes(params.collection)) {
 									const hasPerm = await hasPermission(String(authUser.id), String(authUser.role), requiredPerm, env);

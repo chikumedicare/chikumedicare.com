@@ -28,6 +28,7 @@ export const HeadOfficeSchema = baseEntity.extend({
 export const DivisionSchema = baseEntity.extend({
   name: z.string().min(1, 'Division Name is required').transform(val => val.trim()),
   div_code: z.string().optional().nullable().transform(val => val ? val.trim().toUpperCase() : null),
+  head_office_id: z.string().optional().nullable(),
   head_user_id: z.string().optional().nullable(),
   head_user_name: z.string().optional().nullable(),
   description: z.string().optional().nullable(),

@@ -22,7 +22,7 @@ export const ALLOWED_SORT_COLUMNS: Record<string, Set<string>> = {
   hqs: new Set(['id', 'name', 'code', 'created_at']),
   areas: new Set(['id', 'area_name', 'area_code', 'created_at']),
   beats: new Set(['id', 'beat_name', 'beat_code', 'created_at']),
-  divisions: new Set(['id', 'name', 'code', 'created_at']),
+  divisions: new Set(['id', 'name', 'code', 'created_at', 'head_office_id', 'head_user_name', 'display_order']),
   holidays: new Set(['id', 'name', 'date', 'type']),
   user_history: new Set(['id', 'action', 'changed_at']),
   role_change_history: new Set(['id', 'effective_date', 'created_at']),

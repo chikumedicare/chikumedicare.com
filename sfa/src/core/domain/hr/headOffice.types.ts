@@ -27,6 +27,7 @@ export interface Division {
   id: string;
   code: string;
   name: string;
+  headOfficeId?: string;
   headUserId?: string;
   headUserName?: string;
   description?: string;

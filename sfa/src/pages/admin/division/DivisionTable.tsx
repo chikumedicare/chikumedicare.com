@@ -93,10 +93,13 @@ export function DivisionTable({
                 Division Code
               </th>
               <th style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
-                Division Name
+                Division Name & Governance
               </th>
               <th style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
-                Product Portfolio & Description
+                Division Head (VP / NSM)
+              </th>
+              <th style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
+                Portfolio & Segment
               </th>
               <th style={{ padding: '10px 14px', fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase' }}>
                 Status
@@ -138,17 +141,35 @@ export function DivisionTable({
                     </span>
                   </td>
 
-                  {/* Division Name */}
+                  {/* Division Name & Parent HO Link */}
                   <td style={{ padding: '12px 14px', verticalAlign: 'middle' }}>
                     <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#0f172a' }}>
                       {d.name}
                     </div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '3px', fontSize: '11px', color: '#0369a1', background: '#f0f9ff', padding: '1px 6px', borderRadius: '4px', border: '1px solid #e0f2fe' }}>
+                      <span>🏢</span>
+                      <span>Bhopal Corporate HO</span>
+                    </div>
+                  </td>
+
+                  {/* Division Head / Lead */}
+                  <td style={{ padding: '12px 14px', verticalAlign: 'middle' }}>
+                    {d.headUserName ? (
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12.5px', fontWeight: 600, color: '#1e293b' }}>
+                        <span>👤</span>
+                        <span>{d.headUserName}</span>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>
+                        Admin / Executive direct
+                      </span>
+                    )}
                   </td>
 
                   {/* Portfolio / Description */}
-                  <td style={{ padding: '12px 14px', verticalAlign: 'middle', maxWidth: '320px' }}>
+                  <td style={{ padding: '12px 14px', verticalAlign: 'middle', maxWidth: '280px' }}>
                     <div style={{ fontSize: '12.5px', color: '#64748b', lineHeight: 1.4 }}>
-                      {d.description || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Standard healthcare & pharmaceuticals portfolio</span>}
+                      {d.description || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Standard healthcare portfolio</span>}
                     </div>
                   </td>
 
@@ -176,7 +197,6 @@ export function DivisionTable({
                   {/* Actions */}
                   <td style={{ padding: '12px 14px', verticalAlign: 'middle', textAlign: 'right', whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'inline-flex', gap: '6px' }}>
-                      {/* Edit Button */}
                       <button
                         type="button"
                         onClick={() => onEdit(d)}
@@ -195,7 +215,6 @@ export function DivisionTable({
                         ✏️ Edit
                       </button>
 
-                      {/* Deactivate / Activate Button */}
                       <button
                         type="button"
                         onClick={() => onToggleStatus(d)}
@@ -214,7 +233,6 @@ export function DivisionTable({
                         {isActive ? '🚫 Deactivate' : '🟢 Activate'}
                       </button>
 
-                      {/* Delete Button */}
                       <button
                         type="button"
                         onClick={() => onDelete(d)}

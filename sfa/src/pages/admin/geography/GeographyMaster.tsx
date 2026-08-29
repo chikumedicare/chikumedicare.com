@@ -7,6 +7,7 @@ import { useAuthSessionStore } from '../../../store/hr/useAuthSessionStore';
 import { GeographyTable, type TerritoryItem } from './GeographyTable';
 import { GeographyFormModal } from './GeographyFormModal';
 import { HeadOfficeFormModal } from './HeadOfficeFormModal';
+import { DeactivateConfirmModal } from './DeactivateConfirmModal';
 
 interface GeographyMasterProps {
   onAddTerritory?: (type: TerritoryType) => void;
@@ -19,69 +20,48 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
   const [status, setStatus] = useState('ALL');
   const [parentFilter, setParentFilter] = useState('ALL');
 
-  // Modal states: simplified modal for HO, standard modal for Field Geography
+  // Modals state
   const [hoModalOpen, setHoModalOpen] = useState(false);
   const [editingHoItem, setEditingHoItem] = useState<HeadOfficeRecord | null>(null);
-
   const [fieldModalOpen, setFieldModalOpen] = useState(false);
   const [fieldModalType, setFieldModalType] = useState<TerritoryType>('Zone');
   const [editingFieldItem, setEditingFieldItem] = useState<Zone | State | Headquarter | Area | Beat | null>(null);
 
+  // Deactivate confirmation modal state
+  const [deactivateTarget, setDeactivateTarget] = useState<TerritoryItem | null>(null);
+  const [deactivateLoading, setDeactivateLoading] = useState(false);
+
   const { role, divisionId: sessionDivisionId } = useAuthSessionStore();
   const { divisions } = useHeadOfficeStore();
   const isAdminOrOwner = role === 'ADMIN' || role === 'OWNER';
-
-  const [activeDivisionId, setActiveDivisionId] = useState(
-    isAdminOrOwner ? '' : (sessionDivisionId || '')
-  );
+  const [activeDivisionId, setActiveDivisionId] = useState(isAdminOrOwner ? '' : (sessionDivisionId || ''));
 
   const {
-    headOffices,
-    zones,
-    states,
-    hqs,
-    areas,
-    beats,
-    getZoneName,
-    getStateName,
-    getHqName,
-    addOrUpdateHeadOffice,
-    toggleHeadOfficeStatus,
-    addOrUpdateTerritory,
-    toggleTerritoryStatus,
+    headOffices, zones, states, hqs, areas, beats,
+    getZoneName, getStateName, getHqName,
+    addOrUpdateHeadOffice, toggleHeadOfficeStatus,
+    addOrUpdateTerritory, toggleTerritoryStatus,
   } = useGeographyStore();
 
   const map: Record<TerritoryType, TerritoryItem[]> = {
-    HO: headOffices,
-    Zone: zones,
-    State: states,
-    HQ: hqs,
-    Area: areas,
-    Beat: beats,
+    HO: headOffices, Zone: zones, State: states, HQ: hqs, Area: areas, Beat: beats,
   };
 
   const rawList = map[tab] || [];
 
   const filtered = rawList.filter((item) => {
-    // Division filter (HO has no division requirement)
-    if (tab !== 'HO' && activeDivisionId && (item as Zone).divisionId && (item as Zone).divisionId !== activeDivisionId) {
-      return false;
-    }
-    // Search query
+    if (tab !== 'HO' && activeDivisionId && (item as Zone).divisionId && (item as Zone).divisionId !== activeDivisionId) return false;
     const code = item.code || '';
     const name = item.name || '';
-    const matchesQ =
-      !q ||
-      code.toLowerCase().includes(q.toLowerCase()) ||
-      name.toLowerCase().includes(q.toLowerCase());
-    if (!matchesQ) return false;
+    if (q && !code.toLowerCase().includes(q.toLowerCase()) && !name.toLowerCase().includes(q.toLowerCase())) return false;
 
-    // Status filter
-    const isItemActive = tab === 'HO' ? Boolean((item as HeadOfficeRecord).is_active) : Boolean((item as Zone | State | Headquarter | Area | Beat).isActive);
+    const isItemActive = tab === 'HO'
+      ? Boolean((item as HeadOfficeRecord).is_active)
+      : Boolean((item as Zone | State | Headquarter | Area | Beat).isActive);
+
     if (status === 'ACTIVE' && !isItemActive) return false;
     if (status === 'INACTIVE' && isItemActive) return false;
 
-    // Parent filter
     if (parentFilter !== 'ALL') {
       if (tab === 'State' && (item as State).zoneId !== parentFilter) return false;
       if (tab === 'HQ' && (item as Headquarter).stateId !== parentFilter) return false;
@@ -117,11 +97,28 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
     }
   };
 
-  const handleToggle = (item: TerritoryItem) => {
-    if (tab === 'HO') {
-      toggleHeadOfficeStatus(item as HeadOfficeRecord);
+  const handleToggleClick = (item: TerritoryItem) => {
+    const isItemActive = tab === 'HO'
+      ? Boolean((item as HeadOfficeRecord).is_active)
+      : Boolean((item as Zone | State | Headquarter | Area | Beat).isActive);
+
+    if (isItemActive) {
+      setDeactivateTarget(item);
     } else {
-      toggleTerritoryStatus(tab, item as Zone | State | Headquarter | Area | Beat);
+      if (tab === 'HO') toggleHeadOfficeStatus(item as HeadOfficeRecord);
+      else toggleTerritoryStatus(tab, item as Zone | State | Headquarter | Area | Beat);
+    }
+  };
+
+  const handleConfirmDeactivation = async () => {
+    if (!deactivateTarget) return;
+    setDeactivateLoading(true);
+    try {
+      if (tab === 'HO') await toggleHeadOfficeStatus(deactivateTarget as HeadOfficeRecord);
+      else await toggleTerritoryStatus(tab, deactivateTarget as Zone | State | Headquarter | Area | Beat);
+      setDeactivateTarget(null);
+    } finally {
+      setDeactivateLoading(false);
     }
   };
 
@@ -136,63 +133,29 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
 
   return (
     <div style={{ padding: '16px 20px', maxWidth: '1440px', margin: '0 auto' }}>
-      {/* Compact Row 1: Header Title & Action Button */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '12px',
-          paddingBottom: '10px',
-          borderBottom: '1px solid #e2e8f0',
-        }}
-      >
+      {/* Compact Row 1: Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
-            Field Geography Master
-          </h2>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>Field Geography Master</h2>
           <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-            {tab === 'HO'
-              ? 'Apex Corporate Head Office (HO) Management — Dedicated for Admin, Owner and Executive leadership'
-              : 'Configure hierarchical field territories, parent linkages, and operating metadata'}
+            {tab === 'HO' ? 'Apex Corporate Head Office (HO) Management' : 'Configure hierarchical field territories, parent linkages, and operating metadata'}
           </p>
         </div>
-
         <button
           type="button"
           onClick={handleOpenAdd}
           style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '8px 16px',
+            display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px',
             background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '8px',
-            fontWeight: 700,
-            fontSize: '12.5px',
-            cursor: 'pointer',
-            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.25)',
+            color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '12.5px', cursor: 'pointer',
           }}
         >
-          <span>➕</span>
-          <span>{tab === 'HO' ? 'Create Head Office (HO)' : `Add New ${tab}`}</span>
+          <span>➕</span> <span>{tab === 'HO' ? 'Create Head Office (HO)' : `Add New ${tab}`}</span>
         </button>
       </div>
 
-      {/* Compact Row 2: Unified Tabs on Left & Filters on Right */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          marginBottom: '14px',
-          flexWrap: 'wrap',
-        }}
-      >
-        {/* Sleek Pills Navigation */}
+      {/* Compact Row 2: Tabs & Filters */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '14px', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
           {tabs.map((t) => {
             const isSelected = tab === t.key;
@@ -202,33 +165,14 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
                 type="button"
                 onClick={() => { setTab(t.key); setParentFilter('ALL'); }}
                 style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  border: isSelected ? '1px solid #0284c7' : '1px solid #e2e8f0',
-                  background: isSelected ? '#0284c7' : '#ffffff',
-                  color: isSelected ? '#ffffff' : '#475569',
-                  fontWeight: isSelected ? 700 : 600,
-                  fontSize: '12.5px',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  whiteSpace: 'nowrap',
+                  display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px',
+                  borderRadius: '8px', border: isSelected ? '1px solid #0284c7' : '1px solid #e2e8f0',
+                  background: isSelected ? '#0284c7' : '#ffffff', color: isSelected ? '#ffffff' : '#475569',
+                  fontWeight: isSelected ? 700 : 600, fontSize: '12.5px', cursor: 'pointer', whiteSpace: 'nowrap',
                 }}
               >
-                <span>{t.icon}</span>
-                <span>{t.label}</span>
-                <span
-                  style={{
-                    background: isSelected ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
-                    color: isSelected ? '#ffffff' : '#64748b',
-                    padding: '1px 6px',
-                    borderRadius: '10px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                  }}
-                >
+                <span>{t.icon}</span> <span>{t.label}</span>
+                <span style={{ background: isSelected ? 'rgba(255,255,255,0.25)' : '#f1f5f9', color: isSelected ? '#ffffff' : '#64748b', padding: '1px 6px', borderRadius: '10px', fontSize: '11px', fontWeight: 700 }}>
                   {t.badge}
                 </span>
               </button>
@@ -236,23 +180,14 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
           })}
         </div>
 
-        {/* Compact Filters Toolbar */}
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <input
             type="text"
             placeholder={`Search ${tab}...`}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            style={{
-              padding: '6px 10px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '6px',
-              fontSize: '12.5px',
-              width: '180px',
-              outline: 'none',
-            }}
+            style={{ padding: '6px 10px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12.5px', width: '180px', outline: 'none' }}
           />
-
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
@@ -262,7 +197,6 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
             <option value="ACTIVE">🟢 Active</option>
             <option value="INACTIVE">🔴 Inactive</option>
           </select>
-
           {divisions.length > 0 && tab !== 'HO' && (
             <select
               value={activeDivisionId}
@@ -270,15 +204,13 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
               style={{ padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', background: '#fff' }}
             >
               <option value="">Divisions: All</option>
-              {divisions.map((d) => (
-                <option key={d.id} value={d.id}>{d.code}</option>
-              ))}
+              {divisions.map((d) => (<option key={d.id} value={d.id}>{d.code}</option>))}
             </select>
           )}
         </div>
       </div>
 
-      {/* Geography Data Table */}
+      {/* Table */}
       <GeographyTable
         tab={tab}
         items={filtered}
@@ -286,11 +218,11 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
         getStateName={getStateName}
         getHqName={getHqName}
         onEdit={handleOpenEdit}
-        onToggleStatus={handleToggle}
+        onToggleStatus={handleToggleClick}
         onAdd={handleOpenAdd}
       />
 
-      {/* 🏢 Simplified Head Office Form Modal (Dedicated for HO Table) */}
+      {/* Form Modals */}
       {hoModalOpen && (
         <HeadOfficeFormModal
           item={editingHoItem}
@@ -303,7 +235,6 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
         />
       )}
 
-      {/* 🗺️ Standard Field Geography Form Modal (For Zone, State, HQ, Area, Beat) */}
       {fieldModalOpen && (
         <GeographyFormModal
           type={fieldModalType}
@@ -318,6 +249,17 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
             return res;
           }}
           back={() => setFieldModalOpen(false)}
+        />
+      )}
+
+      {/* Deactivate Confirmation Popup Modal */}
+      {deactivateTarget && (
+        <DeactivateConfirmModal
+          type={tab}
+          item={deactivateTarget}
+          loading={deactivateLoading}
+          onConfirm={handleConfirmDeactivation}
+          onCancel={() => setDeactivateTarget(null)}
         />
       )}
     </div>

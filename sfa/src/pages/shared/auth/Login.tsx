@@ -80,6 +80,7 @@ export function Login({
       }
 
       setFailedAttempts(0);
+      sessionStorage.setItem('chiku_auth_user', JSON.stringify(user));
       onLogin(user, rememberMe, selectedFy);
     } catch (err: unknown) {
       const msg = getErrorMessage(err);

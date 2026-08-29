@@ -49,6 +49,15 @@ export function useAuthSessionStore() {
     }
   }, []);
 
+  const setAuthUser = useCallback((u: SfaUser | null) => {
+    setCurrentUser(u);
+    if (u) {
+      sessionStorage.setItem('chiku_auth_user', JSON.stringify(u));
+    } else {
+      sessionStorage.removeItem('chiku_auth_user');
+    }
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await GatewayContainer.getAuthGateway().logout();
@@ -66,6 +75,7 @@ export function useAuthSessionStore() {
     hqId: currentUser?.hqId,
     coveringHqIds: currentUser?.coveringHqIds || [],
     divisionId: currentUser?.divisionId,
+    setAuthUser,
     loading,
     error,
     login,

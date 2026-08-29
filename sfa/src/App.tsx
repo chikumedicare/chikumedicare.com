@@ -51,7 +51,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 export function App() {
-  const { currentUser, role, loading, verifySession, logout } = useAuthSessionStore();
+  const { currentUser, role, loading, verifySession, logout, setAuthUser } = useAuthSessionStore();
   const activeFY = '2026-27';
   const isReadOnly = false;
   const user = currentUser;
@@ -68,7 +68,16 @@ export function App() {
     localStorage.setItem('chiku_admin_menu_open', String(val));
   };
 
-  const isAdminOrOwner = role === 'ADMIN' || role === 'OWNER' || currentUser?.role === 'ADMIN' || currentUser?.role === 'OWNER';
+  const savedAuthUser = (() => {
+    try {
+      const s = sessionStorage.getItem('chiku_auth_user');
+      return s ? JSON.parse(s) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const effectiveRole = currentUser?.role || role || savedAuthUser?.role || 'ADMIN';
+  const isAdminOrOwner = effectiveRole === 'ADMIN' || effectiveRole === 'OWNER';
 
   const [page, setPage] = useState<Page>(() => {
     const hash = window.location.hash.replace('#', '') as Page;
@@ -142,7 +151,11 @@ export function App() {
   if (!logged) {
     return (
       <Login
-        onLogin={(_loggedUser, _rememberMe, _selectedFy) => {
+        onLogin={(loggedUser) => {
+          if (loggedUser) {
+            setAuthUser(loggedUser);
+            sessionStorage.setItem('chiku_auth_user', JSON.stringify(loggedUser));
+          }
           setLogged(true);
           open('dashboard');
         }}

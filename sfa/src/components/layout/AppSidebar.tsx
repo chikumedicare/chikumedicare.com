@@ -38,7 +38,7 @@ export function AppSidebar({
 
   // State to track which categories are open in accordion (only active category open by default)
   const [openCategories, setOpenCategories] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
+    const initial: Record<string, boolean> = { hr: true, personal: true };
     const activeCat = findCategoryForPage(page);
     if (activeCat) {
       initial[activeCat] = true;

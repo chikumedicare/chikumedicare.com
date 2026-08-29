@@ -21,7 +21,17 @@ These rules are mandatory and must be strictly followed by the AI Agent across a
 
 ---
 
-## 3. Targeted & Efficient Testing (No Token Waste)
+## 3. Production-Grade Quality Only (Zero Loose / Sloppy Code)
+- **Strict Production-Ready Architecture**:
+  - Never write "quick-and-dirty", loose, or hacky code.
+  - Enforce strong TypeScript typing — avoid arbitrary `any` casting where strict domain schemas and interfaces exist.
+  - Comprehensive error boundaries, input sanitization, and defensive null/undefined checks on every network and database boundary.
+  - No dummy placeholders, no stubbed mock logic in production flows, and no unresolved promises.
+  - Clean, idiomatic, and maintainable software design patterns (SOLID principles, DRY, Separation of Concerns).
+
+---
+
+## 4. Targeted & Efficient Testing (No Token Waste)
 - **Focused Verification**:
   - Test only what was actually edited.
   - Do NOT run heavy, multi-step browser subagents or full-suite recordings for trivial CSS tweaks, text changes, or minor layout adjustments.
@@ -29,7 +39,7 @@ These rules are mandatory and must be strictly followed by the AI Agent across a
 
 ---
 
-## 4. Zero Regressions & Integrity Guarantee
+## 5. Zero Regressions & Integrity Guarantee
 - Every change must compile cleanly with `tsc -b && vite build` (0 errors).
 - All backend Vitest suites must pass with 100% success.
 - Changes must be cleanly committed and pushed to `origin/main` when completed.

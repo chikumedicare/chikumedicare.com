@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { Head } from '../../../components/Head';
 import { useGeographyStore, type TerritoryType } from '../../../store/hr/useGeographyStore';
 import type { Zone, State, Headquarter, Area, Beat } from '../../../core/domain/hr/geography.types';
 import { useHeadOfficeStore } from '../../../store/hr/useHeadOfficeStore';
 import { useAuthSessionStore } from '../../../store/hr/useAuthSessionStore';
-import { GeographyStatsBar } from './GeographyStatsBar';
 import { GeographyTable, type TerritoryItem } from './GeographyTable';
 import { GeographyFormModal } from './GeographyFormModal';
 
@@ -112,113 +110,29 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
     { key: 'State', label: 'States', icon: '🗺️', badge: states.length },
     { key: 'HQ', label: 'Field HQs', icon: '📍', badge: fieldHqs.length },
     { key: 'Area', label: 'Areas', icon: '🏙️', badge: areas.length },
-    { key: 'Beat', label: 'Beats / Routes', icon: '🛣️', badge: beats.length },
+    { key: 'Beat', label: 'Beats', icon: '🛣️', badge: beats.length },
   ];
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1440px', margin: '0 auto' }}>
-      <Head
-        title="Field Geography Master"
-        sub="Manage complete organizational hierarchy: Corporate Head Office (HO), Zones, States, Field HQs, Areas, and Daily Beats."
-      />
-
-      {/* KPI Stats Bar */}
-      <GeographyStatsBar
-        currentTab={tab}
-        onTabChange={(t) => { setTab(t); setParentFilter('ALL'); }}
-        counts={{
-          ho: headOffices.length,
-          zone: zones.length,
-          state: states.length,
-          hq: fieldHqs.length,
-          area: areas.length,
-          beat: beats.length,
+    <div style={{ padding: '16px 20px', maxWidth: '1440px', margin: '0 auto' }}>
+      {/* Compact Row 1: Header Title & Action Button */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '12px',
+          paddingBottom: '10px',
+          borderBottom: '1px solid #e2e8f0',
         }}
-      />
-
-      {/* Modern Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', overflowX: 'auto' }}>
-        {tabs.map((t) => {
-          const isSelected = tab === t.key;
-          return (
-            <button
-              key={t.key}
-              type="button"
-              onClick={() => { setTab(t.key); setParentFilter('ALL'); }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '9px 16px',
-                borderRadius: '10px',
-                border: 'none',
-                background: isSelected ? '#0284c7' : 'transparent',
-                color: isSelected ? '#ffffff' : '#64748b',
-                fontWeight: isSelected ? 700 : 600,
-                fontSize: '13px',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <span>{t.icon}</span>
-              <span>{t.label}</span>
-              <span
-                style={{
-                  background: isSelected ? 'rgba(255,255,255,0.25)' : '#e2e8f0',
-                  color: isSelected ? '#ffffff' : '#475569',
-                  padding: '2px 8px',
-                  borderRadius: '12px',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                }}
-              >
-                {t.badge}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Modern Search & Action Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
-          <input
-            type="text"
-            placeholder={`Search ${tab} by code or name...`}
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            style={{
-              padding: '9px 14px',
-              border: '1px solid #cbd5e1',
-              borderRadius: '8px',
-              fontSize: '13px',
-              minWidth: '240px',
-              outline: 'none',
-            }}
-          />
-
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            style={{ padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', background: '#fff' }}
-          >
-            <option value="ALL">Status: All</option>
-            <option value="ACTIVE">🟢 Active Only</option>
-            <option value="INACTIVE">🔴 Inactive Only</option>
-          </select>
-
-          {divisions.length > 0 && (
-            <select
-              value={activeDivisionId}
-              onChange={(e) => setActiveDivisionId(e.target.value)}
-              style={{ padding: '9px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '13px', background: '#fff' }}
-            >
-              <option value="">Division: All</option>
-              {divisions.map((d) => (
-                <option key={d.id} value={d.id}>{d.code} - {d.name}</option>
-              ))}
-            </select>
-          )}
+      >
+        <div>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
+            Field Geography Master
+          </h2>
+          <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+            Apex Corporate Head Office (HO), Zones, States, Field HQs, Areas, and Daily Beats
+          </p>
         </div>
 
         <button
@@ -227,16 +141,16 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '9px 18px',
+            gap: '6px',
+            padding: '8px 16px',
             background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
             color: '#ffffff',
             border: 'none',
             borderRadius: '8px',
             fontWeight: 700,
-            fontSize: '13px',
+            fontSize: '12.5px',
             cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)',
+            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.25)',
           }}
         >
           <span>➕</span>
@@ -244,7 +158,104 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
         </button>
       </div>
 
-      {/* Geography Data Table */}
+      {/* Compact Row 2: Unified Tabs on Left & Filters on Right */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          marginBottom: '14px',
+          flexWrap: 'wrap',
+        }}
+      >
+        {/* Sleek Pills Navigation */}
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px' }}>
+          {tabs.map((t) => {
+            const isSelected = tab === t.key;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => { setTab(t.key); setParentFilter('ALL'); }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: isSelected ? '1px solid #0284c7' : '1px solid #e2e8f0',
+                  background: isSelected ? '#0284c7' : '#ffffff',
+                  color: isSelected ? '#ffffff' : '#475569',
+                  fontWeight: isSelected ? 700 : 600,
+                  fontSize: '12.5px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span>{t.icon}</span>
+                <span>{t.label}</span>
+                <span
+                  style={{
+                    background: isSelected ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                    color: isSelected ? '#ffffff' : '#64748b',
+                    padding: '1px 6px',
+                    borderRadius: '10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                  }}
+                >
+                  {t.badge}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Compact Filters Toolbar */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            type="text"
+            placeholder={`Search ${tab}...`}
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            style={{
+              padding: '6px 10px',
+              border: '1px solid #cbd5e1',
+              borderRadius: '6px',
+              fontSize: '12.5px',
+              width: '180px',
+              outline: 'none',
+            }}
+          />
+
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            style={{ padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', background: '#fff' }}
+          >
+            <option value="ALL">Status: All</option>
+            <option value="ACTIVE">🟢 Active</option>
+            <option value="INACTIVE">🔴 Inactive</option>
+          </select>
+
+          {divisions.length > 0 && tab !== 'HO' && (
+            <select
+              value={activeDivisionId}
+              onChange={(e) => setActiveDivisionId(e.target.value)}
+              style={{ padding: '6px 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', background: '#fff' }}
+            >
+              <option value="">Divisions: All</option>
+              {divisions.map((d) => (
+                <option key={d.id} value={d.id}>{d.code}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      </div>
+
+      {/* Geography Data Table - Starts immediately near the top */}
       <GeographyTable
         tab={tab}
         items={filtered}
@@ -256,7 +267,7 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
         onAdd={handleOpenAdd}
       />
 
-      {/* Embedded Form Modal for 100% Reliable Add/Edit */}
+      {/* Embedded Form Modal */}
       {modalOpen && (
         <GeographyFormModal
           type={modalType}

@@ -26,7 +26,7 @@ export function useGeographyStore() {
     setError(null);
     try {
       const [hoRows, zList, sList, hList, aList, bList] = await Promise.all([
-        ApiClient.fetch<any[]>('/api/data/head_offices?limit=100', { method: 'GET' }).catch(() => []),
+        ApiClient.fetch<any[]>('/api/data/head_office?limit=100', { method: 'GET' }).catch(() => []),
         geoGateway.getZones(),
         geoGateway.getStates(),
         geoGateway.getHqs(),
@@ -37,14 +37,14 @@ export function useGeographyStore() {
       setHeadOffices(
         (hoRows || []).map((r) => ({
           id: String(r.id || ''),
-          code: String(r.code || ''),
-          name: String(r.name || ''),
+          code: String(r.code || r.cin_number || 'HO-BHO-01'),
+          name: String(r.company_name || r.name || r.brand_name || 'Corporate Head Office'),
           city: r.city || '',
-          state: r.state || '',
-          address: r.address || '',
-          pincode: r.pincode || '',
-          contact_person: r.contact_person || '',
-          contact_phone: r.contact_phone || '',
+          state: r.state || r.state_name || '',
+          address: r.address || r.address_line1 || '',
+          pincode: r.pincode || r.pin_code || '',
+          contact_person: r.contact_person || r.brand_name || '',
+          contact_phone: r.contact_phone || r.helpline_number || r.phone || '',
           is_active: r.is_active === 1 || r.is_active === true,
           created_at: r.created_at || '',
           updated_at: r.updated_at || '',
@@ -80,40 +80,38 @@ export function useGeographyStore() {
     setSelectedDivisionId(divisionId);
   }, []);
 
-  // Separate Head Office CRUD operations on dedicated D1 head_offices table
+  // CRUD operations on dedicated D1 head_office table
   const addOrUpdateHeadOffice = useCallback(
     async (draft: Partial<HeadOfficeRecord>) => {
       try {
         setLoading(true);
         if (draft.id) {
-          await ApiClient.fetch('/api/data/head_offices/' + draft.id, {
+          await ApiClient.fetch('/api/data/head_office/' + draft.id, {
             method: 'PUT',
             body: JSON.stringify({
-              name: draft.name,
+              company_name: draft.name,
+              brand_name: draft.name,
               city: draft.city || null,
-              state: draft.state || null,
-              address: draft.address || null,
-              pincode: draft.pincode || null,
-              contact_person: draft.contact_person || null,
-              contact_phone: draft.contact_phone || null,
+              state_name: draft.state || null,
+              address_line1: draft.address || null,
+              pin_code: draft.pincode || null,
+              helpline_number: draft.contact_phone || null,
               is_active: draft.is_active ? 1 : 0,
             }),
           });
         } else {
-          const newCode = draft.code || 'HO' + String(Date.now()).slice(-3);
-          const newId = 'ho_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-          await ApiClient.fetch('/api/data/head_offices', {
+          const newId = 'hea_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+          await ApiClient.fetch('/api/data/head_office', {
             method: 'POST',
             body: JSON.stringify({
               id: newId,
-              code: newCode,
-              name: draft.name,
+              company_name: draft.name,
+              brand_name: draft.name,
               city: draft.city || null,
-              state: draft.state || null,
-              address: draft.address || null,
-              pincode: draft.pincode || null,
-              contact_person: draft.contact_person || null,
-              contact_phone: draft.contact_phone || null,
+              state_name: draft.state || null,
+              address_line1: draft.address || null,
+              pin_code: draft.pincode || null,
+              helpline_number: draft.contact_phone || null,
               is_active: draft.is_active ? 1 : 0,
             }),
           });
@@ -134,7 +132,7 @@ export function useGeographyStore() {
       try {
         setLoading(true);
         const nextActive = !item.is_active;
-        await ApiClient.fetch('/api/data/head_offices/' + item.id, {
+        await ApiClient.fetch('/api/data/head_office/' + item.id, {
           method: 'PUT',
           body: JSON.stringify({ is_active: nextActive ? 1 : 0 }),
         });

@@ -1,4 +1,5 @@
 export const ALLOWED_SORT_COLUMNS: Record<string, Set<string>> = {
+  head_office: new Set(['id', 'company_name', 'brand_name', 'city', 'state_name', 'pin_code', 'is_active', 'created_at']),
   head_offices: new Set(['id', 'code', 'name', 'city', 'state', 'created_at']),
   doctors: new Set(['id', 'dr_code', 'name', 'created_at', 'visit_frequency']),
   chemists: new Set(['id', 'chemist_code', 'shop_name', 'created_at']),
@@ -32,7 +33,7 @@ export const ALLOWED_SORT_COLUMNS: Record<string, Set<string>> = {
 export function applySearchFilter(query: string, queryParams: any[], collection: string, search: string | null): string {
   if (!search || search.trim().length === 0) return query;
   const sanitized = search.trim();
-  if (collection === 'head_offices') {
+  if (collection === 'head_office' || collection === 'head_offices') {
     query += ` AND (name LIKE ? OR code LIKE ? OR city LIKE ? OR state LIKE ?)`;
     queryParams.push(`%${sanitized}%`, `%${sanitized}%`, `%${sanitized}%`, `%${sanitized}%`);
   } else if (collection === 'users') {

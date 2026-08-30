@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { TextField, SelectField } from '../../../components/FormFields';
 import type { EmployeeUserDraft } from './employeeUser.types';
 import type { SfaRole, SfaUser } from '../../../core/domain/hr/user.types';
 import type { Division } from '../../../core/domain/hr/headOffice.types';
-import type { Headquarter } from '../../../core/domain/hr/geography.types';
+import type { Headquarter, State } from '../../../core/domain/hr/geography.types';
 
 interface EmployeeUserRoleTabProps {
   draft: EmployeeUserDraft;
@@ -11,6 +11,7 @@ interface EmployeeUserRoleTabProps {
   isEditing: boolean;
   divisions: Division[];
   hqs: Headquarter[];
+  states?: State[];
   allUsers: SfaUser[];
   showPassword: boolean;
   setShowPassword: (show: boolean) => void;
@@ -22,10 +23,25 @@ export function EmployeeUserRoleTab({
   isEditing,
   divisions,
   hqs,
+  states = [],
   allUsers,
   showPassword,
   setShowPassword,
 }: EmployeeUserRoleTabProps) {
+  // Initialize state selector from current HQ if editing
+  const currentHq = hqs.find((h) => h.id === draft.hqId);
+  const [selectedStateId, setSelectedStateId] = useState<string>(currentHq?.stateId || '');
+
+  useEffect(() => {
+    if (draft.hqId && !selectedStateId) {
+      const hq = hqs.find((h) => h.id === draft.hqId);
+      if (hq?.stateId) setSelectedStateId(hq.stateId);
+    }
+  }, [draft.hqId, hqs, selectedStateId]);
+
+  const isCorporateRole = draft.role === 'ADMIN' || draft.role === 'OWNER';
+
+  // Grouped Role Options
   const roleOptions: { v: SfaRole; l: string }[] = [
     { v: 'MR', l: '💊 Medical Representative (MR)' },
     { v: 'SR_MR', l: '⭐ Senior MR (SR_MR)' },
@@ -44,23 +60,62 @@ export function EmployeeUserRoleTab({
     l: `${d.name} (${d.code || 'DIV'})`,
   }));
 
+  // Filter HQs by selected State and Division
+  const availableHqs = hqs.filter((h) => {
+    if (selectedStateId && h.stateId !== selectedStateId) return false;
+    if (draft.divisionId && h.divisionId && h.divisionId !== draft.divisionId) return false;
+    return true;
+  });
+
   const hqOptions = [
-    { v: '', l: '-- Select Field Territory / HQ --' },
-    ...hqs.map((h) => ({
+    { v: '', l: selectedStateId ? '-- Select Field Territory / HQ --' : '-- Select State First --' },
+    ...availableHqs.map((h) => ({
       v: h.id,
       l: `📍 ${h.name} (${h.code || 'HQ'})`,
     })),
   ];
 
-  const managerOptions = [
-    { v: '', l: '-- Direct to Head Office / Apex --' },
-    ...allUsers
-      .filter((u) => u.userId !== draft.userId && u.isActive)
-      .map((u) => ({
+  // Smart Hierarchy-Based Manager Filtering
+  const getFilteredManagers = (): { v: string; l: string }[] => {
+    let candidateRoles: SfaRole[] = [];
+
+    if (draft.role === 'MR' || draft.role === 'SR_MR') {
+      candidateRoles = ['ASM', 'SR_ASM', 'RSM'];
+    } else if (draft.role === 'ASM' || draft.role === 'SR_ASM') {
+      candidateRoles = ['RSM', 'ZSM'];
+    } else if (draft.role === 'RSM') {
+      candidateRoles = ['ZSM', 'NSM', 'VP'];
+    } else if (draft.role === 'ZSM') {
+      candidateRoles = ['NSM', 'VP', 'OWNER'];
+    } else if (draft.role === 'NSM') {
+      candidateRoles = ['VP', 'OWNER'];
+    } else if (draft.role === 'VP') {
+      candidateRoles = ['OWNER'];
+    }
+
+    const filtered = allUsers.filter((u) => {
+      if (u.userId === draft.userId || !u.isActive) return false;
+      if (candidateRoles.length > 0 && !candidateRoles.includes(u.role)) return false;
+      // Prefer same division if available
+      if (draft.divisionId && u.divisionId && u.divisionId !== draft.divisionId) return false;
+      return true;
+    });
+
+    // Fallback if none in same division: show candidates across divisions
+    const finalCandidates = filtered.length > 0
+      ? filtered
+      : allUsers.filter((u) => u.userId !== draft.userId && u.isActive && (candidateRoles.length === 0 || candidateRoles.includes(u.role)));
+
+    return [
+      { v: '', l: '-- Direct to Head Office / Apex --' },
+      ...finalCandidates.map((u) => ({
         v: u.id,
         l: `${u.fullName} (${u.role} - ${u.userId})`,
       })),
-  ];
+    ];
+  };
+
+  const managerOptions = getFilteredManagers();
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -69,6 +124,7 @@ export function EmployeeUserRoleTab({
         ℹ️ <b>Single Identity:</b> Employee Code & User ID are identical and used for direct SFA mobile & web login.
       </div>
 
+      {/* Row 1: Code & Role */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <TextField
           label="Employee Code / User ID *"
@@ -84,11 +140,20 @@ export function EmployeeUserRoleTab({
         <SelectField
           label="Designation / Role *"
           value={draft.role}
-          onChange={(v) => setDraft((prev) => ({ ...prev, role: v as SfaRole }))}
+          onChange={(v) => {
+            const newRole = v as SfaRole;
+            setDraft((prev) => ({
+              ...prev,
+              role: newRole,
+              reportsToId: '', // Reset manager on role change to prevent invalid hierarchy
+              hqId: (newRole === 'ADMIN' || newRole === 'OWNER') ? '' : prev.hqId,
+            }));
+          }}
           options={roleOptions}
         />
       </div>
 
+      {/* Row 2: Name */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
         <TextField
           label="First Name *"
@@ -110,32 +175,61 @@ export function EmployeeUserRoleTab({
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      {/* Row 3: Marketing Division */}
+      <div style={{ display: 'grid', gridTemplateColumns: isCorporateRole ? '1fr' : '1fr 1fr 1fr', gap: '12px' }}>
         <SelectField
           label="Marketing Division *"
           value={draft.divisionId || ''}
-          onChange={(v) => setDraft((prev) => ({ ...prev, divisionId: v }))}
+          onChange={(v) => setDraft((prev) => ({ ...prev, divisionId: v, hqId: '', reportsToId: '' }))}
           options={[
             { v: '', l: '-- Select Marketing Division --' },
             ...divisionOptions,
           ]}
         />
 
-        <SelectField
-          label="Assigned Field HQ (Territory)"
-          value={draft.hqId || ''}
-          onChange={(v) => setDraft((prev) => ({ ...prev, hqId: v }))}
-          options={hqOptions}
-        />
+        {/* Step-by-Step Cascading State & HQ (Only for Field Roles) */}
+        {!isCorporateRole && (
+          <>
+            <SelectField
+              label="State (Filters HQs)"
+              value={selectedStateId}
+              onChange={(v) => {
+                setSelectedStateId(v);
+                setDraft((prev) => ({ ...prev, hqId: '' })); // Reset HQ when state changes
+              }}
+              options={[
+                { v: '', l: '-- All States --' },
+                ...states.map((s) => ({ v: s.id, l: `📍 ${s.name}` })),
+              ]}
+            />
+
+            <SelectField
+              label="Assigned Field HQ (Territory)"
+              value={draft.hqId || ''}
+              onChange={(v) => setDraft((prev) => ({ ...prev, hqId: v }))}
+              options={hqOptions}
+            />
+          </>
+        )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-        <SelectField
-          label="Reporting Manager (Hierarchy)"
-          value={draft.reportsToId || ''}
-          onChange={(v) => setDraft((prev) => ({ ...prev, reportsToId: v }))}
-          options={managerOptions}
-        />
+      {/* Corporate Role Banner */}
+      {isCorporateRole && (
+        <div style={{ padding: '10px 14px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12.5px', color: '#475569' }}>
+          🏢 <b>Head Office Governance:</b> System Administrator & Company Directors have Pan-India administrative access. No local field territory or reporting manager required.
+        </div>
+      )}
+
+      {/* Row 4: Reporting Manager & Date of Joining */}
+      <div style={{ display: 'grid', gridTemplateColumns: isCorporateRole ? '1fr' : '1fr 1fr', gap: '12px' }}>
+        {!isCorporateRole && (
+          <SelectField
+            label={`Reporting Manager (${draft.role === 'MR' ? 'ASM' : draft.role === 'ASM' ? 'RSM' : 'Senior Lead'})`}
+            value={draft.reportsToId || ''}
+            onChange={(v) => setDraft((prev) => ({ ...prev, reportsToId: v }))}
+            options={managerOptions}
+          />
+        )}
 
         <TextField
           label="Date of Joining"

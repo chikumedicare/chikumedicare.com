@@ -33,8 +33,11 @@ export function EmployeeUserPersonalTab({ draft, setDraft }: EmployeeUserPersona
     { v: 'AB-', l: 'AB-' },
   ];
 
+  const isMarried = draft.maritalStatus === 'MARRIED';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+      {/* Row 1: Contact info */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
         <TextField
           label="Primary Mobile Number *"
@@ -59,6 +62,7 @@ export function EmployeeUserPersonalTab({ draft, setDraft }: EmployeeUserPersona
         />
       </div>
 
+      {/* Row 2: Demographics */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
         <TextField
           label="Date of Birth"
@@ -84,12 +88,20 @@ export function EmployeeUserPersonalTab({ draft, setDraft }: EmployeeUserPersona
         <SelectField
           label="Marital Status"
           value={draft.maritalStatus}
-          onChange={(v) => setDraft((prev) => ({ ...prev, maritalStatus: v as MaritalStatus }))}
+          onChange={(v) => {
+            const ms = v as MaritalStatus;
+            setDraft((prev) => ({
+              ...prev,
+              maritalStatus: ms,
+              spouseName: ms === 'MARRIED' ? prev.spouseName : '',
+            }));
+          }}
           options={maritalOptions}
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+      {/* Row 3: Family details (Conditional on Marital Status) */}
+      <div style={{ display: 'grid', gridTemplateColumns: isMarried ? '1fr 1fr 1fr' : '1fr 1fr', gap: '12px' }}>
         <TextField
           label="Father's Full Name"
           value={draft.fatherName || ''}
@@ -98,13 +110,23 @@ export function EmployeeUserPersonalTab({ draft, setDraft }: EmployeeUserPersona
         />
 
         <TextField
-          label="Mother's / Spouse Name"
-          value={draft.spouseName || draft.motherName || ''}
-          onChange={(v) => setDraft((prev) => ({ ...prev, spouseName: v }))}
-          placeholder="Spouse or Mother's name"
+          label="Mother's Full Name"
+          value={draft.motherName || ''}
+          onChange={(v) => setDraft((prev) => ({ ...prev, motherName: v }))}
+          placeholder="Mother's name"
         />
+
+        {isMarried && (
+          <TextField
+            label="Spouse Full Name *"
+            value={draft.spouseName || ''}
+            onChange={(v) => setDraft((prev) => ({ ...prev, spouseName: v }))}
+            placeholder="Spouse's name"
+          />
+        )}
       </div>
 
+      {/* Row 4: Addresses */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: '#334155', marginBottom: '5px' }}>

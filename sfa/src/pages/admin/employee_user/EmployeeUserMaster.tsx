@@ -19,7 +19,7 @@ export function EmployeeUserMaster() {
   } = useEmployeeUserActions();
 
   const { divisions } = useHeadOfficeStore();
-  const { hqs } = useGeographyStore();
+  const { hqs, states } = useGeographyStore();
 
   // Search & Filter States
   const [q, setQ] = useState('');
@@ -297,6 +297,7 @@ export function EmployeeUserMaster() {
           item={editingRecord}
           divisions={divisions}
           hqs={hqs}
+          states={states}
           allUsers={users}
           onSave={saveEmployeeUser}
           onClose={() => { setModalOpen(false); setEditingRecord(null); }}

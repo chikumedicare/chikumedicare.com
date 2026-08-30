@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import type { EmployeeUserDraft, EmployeeUserRecord } from './employeeUser.types';
 import type { SfaUser } from '../../../core/domain/hr/user.types';
 import type { Division } from '../../../core/domain/hr/headOffice.types';
-import type { Headquarter } from '../../../core/domain/hr/geography.types';
+import type { Headquarter, State } from '../../../core/domain/hr/geography.types';
 import { EmployeeUserRoleTab } from './EmployeeUserRoleTab';
 import { EmployeeUserPersonalTab } from './EmployeeUserPersonalTab';
 import { EmployeeUserKycBankTab } from './EmployeeUserKycBankTab';
@@ -12,6 +12,7 @@ interface EmployeeUserModalProps {
   item?: EmployeeUserRecord | null;
   divisions: Division[];
   hqs: Headquarter[];
+  states?: State[];
   allUsers: SfaUser[];
   onSave: (draft: EmployeeUserDraft) => Promise<{ success: boolean; error?: string }>;
   onClose: () => void;
@@ -21,6 +22,7 @@ export function EmployeeUserModal({
   item,
   divisions,
   hqs,
+  states = [],
   allUsers,
   onSave,
   onClose,

@@ -32,7 +32,7 @@ export function HeadOfficeMaster() {
 
   useEffect(() => {
     if (profile) {
-      setFormData((prev: any) => ({ ...profile, ...prev }));
+      setFormData((prev: any) => ({ ...prev, ...profile }));
     }
   }, [profile]);
 
@@ -76,6 +76,36 @@ export function HeadOfficeMaster() {
         title="Company Profile"
         sub="Corporate Legal Identity • Registered Office Address • Statutory Drug Licenses & Invoicing Tax Identifiers"
       />
+      {/* Linked Corporate Head Office Governance Banner */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '22px' }}>🏛️</span>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: '13px', color: '#0369a1' }}>
+              Apex Corporate Head Office (Root of All Divisions & Geography)
+            </div>
+            <div style={{ fontSize: '11.5px', color: '#0284c7' }}>
+              Linked directly to Cloudflare D1 table and Field Geography Master.
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => { window.location.hash = 'geography'; }}
+          style={{
+            padding: '6px 14px',
+            borderRadius: '8px',
+            border: '1px solid #0284c7',
+            background: '#ffffff',
+            color: '#0284c7',
+            fontSize: '12px',
+            fontWeight: 700,
+            cursor: 'pointer',
+          }}
+        >
+          🗺️ View in Field Geography Master ➔
+        </button>
+      </div>
 
       {/* Unified Single Form Container */}
       <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '28px', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>

@@ -210,6 +210,34 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
         </div>
       </div>
 
+      {/* Connected Corporate Head Office & Company Profile Banner */}
+      {tab === 'HO' && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', color: '#0369a1' }}>
+            <span>🏢</span>
+            <span>
+              This is the Apex Corporate Head Office governing all Field Geography. Full statutory licenses (CIN, GSTIN, PAN, Drug Licenses) are configured in <b>Company Profile</b>.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => { window.location.hash = 'head-office'; }}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '6px',
+              border: '1px solid #0284c7',
+              background: '#ffffff',
+              color: '#0284c7',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            ⚙️ Open Full Company Profile & Licenses ➔
+          </button>
+        </div>
+      )}
       {/* Table */}
       <GeographyTable
         tab={tab}

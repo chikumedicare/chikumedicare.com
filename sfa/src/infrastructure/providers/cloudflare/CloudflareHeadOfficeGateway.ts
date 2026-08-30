@@ -60,51 +60,71 @@ export class CloudflareHeadOfficeGateway implements IHeadOfficeGateway {
   }
 
   async getHeadOfficeProfile(): Promise<HeadOfficeProfile> {
-    const rows = await ApiClient.fetch<any[]>('/api/data/head_office_profile?limit=1', { method: 'GET' });
+    const rows = await ApiClient.fetch<any[]>('/api/data/head_office?limit=1', { method: 'GET' });
     const r = rows && rows[0] ? rows[0] : {};
     return {
-      companyName: String(r.company_name || r.companyName || 'Chiku Medicare Pvt. Ltd.'),
-      brandName: String(r.brand_name || r.brandName || ''),
-      addressLine1: String(r.address_line1 || r.addressLine1 || r.address || ''),
+      id: String(r.id || ''),
+      companyName: String(r.company_name || r.companyName || 'CHIKU MEDICARE PRIVATE LIMITED'),
+      brandName: String(r.brand_name || r.brandName || 'CHIKU MEDICARE'),
+      cinNumber: String(r.cin_number || r.cinNumber || ''),
+      panNumber: String(r.pan_number || r.panNumber || ''),
+      gstin: String(r.gstin || ''),
+      drugLicenseNo20b: String(r.drug_license_no_20b || r.drugLicenseNo20b || ''),
+      drugLicenseNo21b: String(r.drug_license_no_21b || r.drugLicenseNo21b || ''),
+      fssaiLicenseNo: String(r.fssai_license_no || r.fssaiLicenseNo || ''),
+      addressLine1: String(r.address_line1 || r.addressLine1 || ''),
+      addressLine2: String(r.address_line2 || r.addressLine2 || ''),
       city: String(r.city || ''),
       stateName: String(r.state_name || r.stateName || ''),
       pinCode: String(r.pin_code || r.pinCode || ''),
       phone: String(r.phone || ''),
       email: String(r.email || ''),
       website: String(r.website || ''),
+      helplineNumber: String(r.helpline_number || r.helplineNumber || ''),
+      activeFinancialYear: String(r.active_financial_year || r.activeFinancialYear || '2026-27'),
       workingDaysPerMonth: Number(r.working_days_per_month || r.workingDaysPerMonth || 26),
     };
   }
 
   async updateHeadOfficeProfile(profile: Partial<HeadOfficeProfile>): Promise<HeadOfficeProfile> {
-    const payload = {
+    const existing = await ApiClient.fetch<any[]>('/api/data/head_office?limit=1', { method: 'GET' });
+    const existingId = existing && existing[0]?.id ? existing[0].id : 'hea_1786990376047_xxozx9';
+
+    const payload: any = {
       company_name: profile.companyName,
       brand_name: profile.brandName,
+      cin_number: profile.cinNumber,
+      pan_number: profile.panNumber,
+      gstin: profile.gstin,
+      drug_license_no_20b: profile.drugLicenseNo20b,
+      drug_license_no_21b: profile.drugLicenseNo21b,
+      fssai_license_no: profile.fssaiLicenseNo,
       address_line1: profile.addressLine1,
+      address_line2: profile.addressLine2,
       city: profile.city,
       state_name: profile.stateName,
       pin_code: profile.pinCode,
       email: profile.email,
       phone: profile.phone,
       website: profile.website,
-      working_days_per_month: profile.workingDaysPerMonth,
+      helpline_number: profile.helplineNumber,
+      active_financial_year: profile.activeFinancialYear || '2026-27',
+      working_days_per_month: profile.workingDaysPerMonth || 26,
       updated_at: new Date().toISOString(),
     };
-    const res = await ApiClient.fetch<any>('/api/data/head_office_profile', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-    return {
-      companyName: String(res?.company_name || profile.companyName || ''),
-      brandName: String(res?.brand_name || profile.brandName || ''),
-      addressLine1: String(res?.address_line1 || profile.addressLine1 || ''),
-      city: String(res?.city || profile.city || ''),
-      stateName: String(res?.state_name || profile.stateName || ''),
-      pinCode: String(res?.pin_code || profile.pinCode || ''),
-      email: String(res?.email || profile.email || ''),
-      phone: String(res?.phone || profile.phone || ''),
-      website: String(res?.website || profile.website || ''),
-      workingDaysPerMonth: Number(res?.working_days_per_month || profile.workingDaysPerMonth || 26),
-    };
+
+    if (existingId) {
+      await ApiClient.fetch<any>('/api/data/head_office/' + existingId, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      });
+    } else {
+      await ApiClient.fetch<any>('/api/data/head_office', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    }
+
+    return await this.getHeadOfficeProfile();
   }
 }

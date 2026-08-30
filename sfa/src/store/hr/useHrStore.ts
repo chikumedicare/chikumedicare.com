@@ -1,3 +1,10 @@
+let _cachedEmp: Employee[] | null = null;
+let _cachedUsers: SfaUser[] | null = null;
+let _cachedLeaves: LeaveAllocation[] | null = null;
+let _cachedDa: DaRate[] | null = null;
+let _lastHrFetch = 0;
+const HR_CACHE_TTL = 30000;
+
 import { getErrorMessage } from '../../utils/dataIntegrity';
 import { useState, useCallback, useEffect } from 'react';
 import type { Employee, EmploymentStatus } from '../../core/domain/hr/employee.types';
@@ -21,7 +28,7 @@ export function useHrStore() {
   const transferGateway = GatewayContainer.getTransferGateway();
   const promotionGateway = GatewayContainer.getPromotionGateway();
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force?: boolean) => {
     setLoading(true);
     setError(null);
     try {
@@ -57,7 +64,7 @@ export function useHrStore() {
         } else {
           saved = await empGateway.createEmployee(draft);
         }
-        await refresh();
+        await refresh(true);
         return { success: true, employee: saved };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -73,7 +80,7 @@ export function useHrStore() {
       try {
         setLoading(true);
         await empGateway.updateEmployee(emp.id, { ...emp, status });
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -93,7 +100,7 @@ export function useHrStore() {
           await userGateway.resetPassword(user.id, pw.trim());
         }
         await userGateway.updateUser(user.id, updates);
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -129,7 +136,7 @@ export function useHrStore() {
           divisionId: divisionId || emp.divisionId || undefined,
           joiningDate: joiningDate || new Date().toISOString().split('T')[0],
         });
-        await refresh();
+        await refresh(true);
         return { success: true, user: created };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -145,7 +152,7 @@ export function useHrStore() {
       try {
         setLoading(true);
         await userGateway.updateUser(user.id, { isActive: !user.isActive });
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -168,7 +175,7 @@ export function useHrStore() {
       try {
         setLoading(true);
         await transferGateway.transferUser(user.id, newHqId, divisionId, primaryAreaId, reason, effectiveDate);
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -200,7 +207,7 @@ export function useHrStore() {
           effectiveDate,
           actionType
         );
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -245,7 +252,7 @@ export function useHrStore() {
       try {
         setLoading(true);
         await userGateway.updateUser(userId, { reportsToId: reportsToId || '' });
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -261,7 +268,7 @@ export function useHrStore() {
       try {
         setLoading(true);
         await userGateway.resetDevice(user.id);
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };

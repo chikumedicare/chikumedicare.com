@@ -6,7 +6,7 @@ import type { LeaveAllocation, DaRate, LeaveApplication } from '../../core/domai
 interface UseLeaveDaActionsParams {
   leaveGateway: any;
   daGateway: any;
-  refresh: () => Promise<void>;
+  refresh: (force?: boolean) => Promise<void>;
   setLoading: (loading: boolean) => void;
   leaves: LeaveAllocation[];
   daRates: DaRate[];

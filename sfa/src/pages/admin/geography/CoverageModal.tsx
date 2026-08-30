@@ -69,7 +69,7 @@ export function CoverageModal({
 
   const isFieldRep = user.role === 'MR' || user.role === 'SR_MR';
   const allSupervisedHqIds = Array.from(new Set([hqId, ...coveringHqIds].filter(Boolean)));
-  const managerCascadeAreaIds = areas.filter((a) => Boolean(a.hqId && (allSupervisedHqIds as any).includes(a.hqId))).map((a) => a.id);
+  const managerCascadeAreaIds = areas.filter((a) => Boolean(a.hqId && allSupervisedHqIds.includes(a.hqId))).map((a) => a.id);
 
   const handleSave = async () => {
     setSaving(true);

@@ -5,6 +5,7 @@ import type { SfaUser } from '../../../core/domain/hr/user.types';
 import { useGeographyStore } from '../../../store/hr/useGeographyStore';
 import { useHeadOfficeStore } from '../../../store/hr/useHeadOfficeStore';
 import { useHrStore } from '../../../store/hr/useHrStore';
+import { CoverageModal } from './CoverageModal';
 
 interface GeographyMappingProps {
   users: SfaUser[];
@@ -17,10 +18,11 @@ export function GeographyMapping({ users, onManageCoverage }: GeographyMappingPr
   const [divisionFilter, setDivisionFilter] = useState('ALL');
   const [stateFilter, setStateFilter] = useState('ALL');
   const [coverageFilter, setCoverageFilter] = useState('ALL');
+  const [selectedUser, setSelectedUser] = useState<SfaUser | null>(null);
 
-  const { getHqName, getStateName, hqs, areas, states } = useGeographyStore();
+  const { getHqName, getStateName, hqs, areas, states, beats, updateUserCoverage, refresh: refreshGeo } = useGeographyStore();
   const { divisions } = useHeadOfficeStore();
-  const { employees } = useHrStore();
+  const { employees, refresh: refreshHr } = useHrStore();
 
   const fieldUsers = users.filter((u) => u.role !== 'ADMIN' && u.role !== 'OWNER');
 
@@ -110,6 +112,27 @@ export function GeographyMapping({ users, onManageCoverage }: GeographyMappingPr
 
     return true;
   });
+
+  if (selectedUser) {
+    return (
+      <CoverageModal
+        user={selectedUser}
+        hqs={hqs}
+        areas={areas}
+        beats={beats}
+        states={states}
+        onSave={async (userId, cov) => {
+          const res = await updateUserCoverage(userId, cov);
+          if (res.success) {
+            await Promise.all([refreshGeo(true), refreshHr(true)]);
+            setSelectedUser(null);
+          }
+          return res;
+        }}
+        back={() => setSelectedUser(null)}
+      />
+    );
+  }
 
   return (
     <>
@@ -258,7 +281,10 @@ export function GeographyMapping({ users, onManageCoverage }: GeographyMappingPr
                   <td>
                     <button
                       className="link"
-                      onClick={() => onManageCoverage?.(u)}
+                      onClick={() => {
+                      setSelectedUser(u);
+                      onManageCoverage?.(u);
+                    }}
                       style={{ fontWeight: 600 }}
                     >
                       Manage Coverage

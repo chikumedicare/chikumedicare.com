@@ -69,3 +69,16 @@ These rules are mandatory and must be strictly followed by the AI Agent across a
 - Every change must compile cleanly with `tsc -b && vite build` (0 errors).
 - All backend Vitest suites must pass with 100% success.
 - Changes must be cleanly committed and pushed to `origin/main` when completed.
+
+---
+
+## 9. 100% Live Cloudflare D1 Database Mandate (Zero Mock / Zero Local Stubs / Pure Live Persistence)
+- **Strict Single Source of Truth**:
+  - Project ki A to Z files, components, screens, dropdown options aur workflows—chahe past ke ho, current ho ya future modules—100% data live Cloudflare D1 database se hi lenge aur D1 me hi save karenge.
+- **Zero Mock, Fake or Local Storage Fallbacks**:
+  - Kisi bhi component me koi fake/mock JSON, hardcoded arrays, dummy placeholders ya in-memory stubs use karna strictly forbidden hai.
+  - Business records (Divisions, HQs, Employees, Products, Doctors, Chemists, Stockists, Leaves, SFC, etc.) ke liye browser `localStorage`, `sessionStorage` ya browser history ko pseudo-database ki tarah use nahi kiya jayega.
+- **Pure Live Dynamic Binding**:
+  - Sabhi dropdowns, selects aur relationship filters (e.g. Division lists, HQ lists, Manager lists) live D1 tables se fetch honge.
+  - Har Create, Read, Update, Delete (CRUD) operation directly live Cloudflare D1 SQL query ke through execute hoga.
+  - Kisi bhi naye feature ka development tabhi shuru hoga jab uska Cloudflare D1 table schema aur live gateway configured ho.

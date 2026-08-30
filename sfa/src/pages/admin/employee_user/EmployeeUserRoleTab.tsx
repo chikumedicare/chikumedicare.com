@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TextField, SelectField } from '../../../components/FormFields';
 import type { EmployeeUserDraft } from './employeeUser.types';
+import { generateNextEmployeeUserId } from './employeeUser.types';
 import type { SfaRole, SfaUser } from '../../../core/domain/hr/user.types';
 import type { Division } from '../../../core/domain/hr/headOffice.types';
 import type { Headquarter, State } from '../../../core/domain/hr/geography.types';
@@ -127,14 +128,14 @@ export function EmployeeUserRoleTab({
       {/* Row 1: Code & Role */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
         <TextField
-          label="Employee Code / User ID *"
+          label="Employee Code / User ID (Auto-Generated) 🔒"
           value={draft.userId}
           onChange={(v) => {
             const clean = v.trim().toUpperCase();
             setDraft((prev) => ({ ...prev, userId: clean, empCode: clean }));
           }}
           placeholder="e.g. CK001"
-          disabled={isEditing}
+          disabled={true}
         />
 
         <SelectField
@@ -142,12 +143,17 @@ export function EmployeeUserRoleTab({
           value={draft.role}
           onChange={(v) => {
             const newRole = v as SfaRole;
-            setDraft((prev) => ({
-              ...prev,
-              role: newRole,
-              reportsToId: '', // Reset manager on role change to prevent invalid hierarchy
-              hqId: (newRole === 'ADMIN' || newRole === 'OWNER') ? '' : prev.hqId,
-            }));
+            setDraft((prev) => {
+              const updatedCode = !isEditing ? generateNextEmployeeUserId(newRole, allUsers) : prev.userId;
+              return {
+                ...prev,
+                role: newRole,
+                userId: updatedCode,
+                empCode: updatedCode,
+                reportsToId: '', // Reset manager on role change to prevent invalid hierarchy
+                hqId: (newRole === 'ADMIN' || newRole === 'OWNER') ? '' : prev.hqId,
+              };
+            });
           }}
           options={roleOptions}
         />

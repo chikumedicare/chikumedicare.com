@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { EmployeeUserDraft, EmployeeUserRecord } from './employeeUser.types';
+import { generateNextEmployeeUserId } from './employeeUser.types';
 import type { SfaUser } from '../../../core/domain/hr/user.types';
 import type { Division } from '../../../core/domain/hr/headOffice.types';
 import type { Headquarter, State } from '../../../core/domain/hr/geography.types';
@@ -37,15 +38,9 @@ export function EmployeeUserModal({
     if (item) {
       return { ...item };
     }
-    // Auto calculate suggestion for next employee code
-    const existingNums = allUsers
-      .map((u) => {
-        const m = (u.userId || '').match(/\d+/);
-        return m ? parseInt(m[0], 10) : 0;
-      })
-      .filter((n) => !isNaN(n));
-    const maxNum = existingNums.length > 0 ? Math.max(...existingNums) : 0;
-    const nextCode = `CK${String(maxNum + 1).padStart(3, '0')}`;
+    // Auto calculate sequential employee code based on initial role (MR: CHIKU0001, Admin: CHIKUME01)
+    const initialRole: SfaUser['role'] = 'MR';
+    const nextCode = generateNextEmployeeUserId(initialRole, allUsers);
 
     return {
       userId: nextCode,

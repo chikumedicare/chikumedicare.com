@@ -1,4 +1,4 @@
-import type { SfaRole } from '../../../core/domain/hr/user.types';
+import type { SfaRole, SfaUser } from '../../../core/domain/hr/user.types';
 import type { Gender, MaritalStatus, AccountType } from '../../../core/domain/hr/employee.types';
 
 export interface EmployeeUserDraft {
@@ -46,4 +46,35 @@ export interface EmployeeUserRecord extends EmployeeUserDraft {
   divisionName?: string;
   hqName?: string;
   reportsToName?: string;
+}
+
+export function generateNextEmployeeUserId(role: SfaRole, allUsers: SfaUser[]): string {
+  const isAdminOrOwner = role === 'ADMIN' || role === 'OWNER';
+
+  if (isAdminOrOwner) {
+    // Admin / Owner format: CHIKUME01, CHIKUME02, ... (2-digit padding)
+    const existingNums = allUsers
+      .map((u) => {
+        const id = (u.userId || u.empCode || '').toUpperCase();
+        const m = id.match(/^CHIKUME(\d+)$/);
+        return m ? parseInt(m[1], 10) : 0;
+      })
+      .filter((n) => !isNaN(n) && n > 0);
+
+    const maxNum = existingNums.length > 0 ? Math.max(...existingNums) : 0;
+    return `CHIKUME${String(maxNum + 1).padStart(2, '0')}`;
+  } else {
+    // Field Employee / User format: CHIKU0001, CHIKU0002, ... (4-digit padding)
+    const existingNums = allUsers
+      .map((u) => {
+        const id = (u.userId || u.empCode || '').toUpperCase();
+        if (id.startsWith('CHIKUME')) return 0;
+        const m = id.match(/^CHIKU(\d+)$/);
+        return m ? parseInt(m[1], 10) : 0;
+      })
+      .filter((n) => !isNaN(n) && n > 0);
+
+    const maxNum = existingNums.length > 0 ? Math.max(...existingNums) : 0;
+    return `CHIKU${String(maxNum + 1).padStart(4, '0')}`;
+  }
 }

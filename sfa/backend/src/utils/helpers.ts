@@ -35,7 +35,8 @@ const ENTITY_CODE_MAP: Record<string, { codeField: string; prefix: string; paddi
   chemists: { codeField: 'chemist_code', prefix: 'CH', padding: 4 },
   stockists: { codeField: 'stockist_code', prefix: 'SK', padding: 4 },
   products: { codeField: 'product_code', prefix: 'PR', padding: 4 },
-  employees: { codeField: 'emp_code', prefix: 'EMP', padding: 3 },
+  employees: { codeField: 'emp_code', prefix: 'CHIKU', padding: 4 },
+  users: { codeField: 'user_id', prefix: 'CHIKU', padding: 4 },
   divisions: { codeField: 'division_code', prefix: 'CHIKU', padding: 1 },
 };
 
@@ -43,7 +44,12 @@ export async function generateEntityCode(env: Env, collection: string, body: any
   const config = ENTITY_CODE_MAP[collection];
   if (!config) return;
 
-  const { codeField, prefix, padding } = config;
+  let { codeField, prefix, padding } = config;
+  const isCorporate = body && (body.role === 'ADMIN' || body.role === 'OWNER');
+  if ((collection === 'users' || collection === 'employees') && isCorporate) {
+    prefix = 'CHIKUME';
+    padding = 2;
+  }
   const existingVal = body[codeField] || (collection === 'divisions' ? (body.division_code || body.div_code || body.code) : null);
 
   if (action === 'CREATE' && (!existingVal || typeof existingVal !== 'string' || existingVal.trim() === '')) {

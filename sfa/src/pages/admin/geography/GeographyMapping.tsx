@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { Head } from '../../../components/Head';
 import type { SfaUser } from '../../../core/domain/hr/user.types';
 import { useGeographyStore } from '../../../store/hr/useGeographyStore';
 import { useHeadOfficeStore } from '../../../store/hr/useHeadOfficeStore';
 import { useHrStore } from '../../../store/hr/useHrStore';
-import { GeographyMappingStats } from './GeographyMappingStats';
 import { GeographyMappingFilters } from './GeographyMappingFilters';
 import { GeographyMappingTable } from './GeographyMappingTable';
 import { CoverageModal } from './CoverageModal';
@@ -126,7 +124,7 @@ export function GeographyMapping({ users, onManageCoverage }: GeographyMappingPr
     return true;
   });
 
-  // Calculate Metrics for Stats Bar
+  // Calculate Metrics for Inline Header Badges
   const mappedCount = fieldUsers.filter((u) =>
     u.role === 'MR' || u.role === 'SR_MR'
       ? u.areaIds && u.areaIds.length > 0
@@ -136,21 +134,42 @@ export function GeographyMapping({ users, onManageCoverage }: GeographyMappingPr
   const unmappedCount = fieldUsers.length - mappedCount;
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
-      <Head
-        title="Field Geography & Territory Mapping"
-        sub="Configure Primary Base HQ, Multi-HQ Branch Supervision, and Customer Beat Areas for all field representatives."
-      />
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
+      {/* Compact Header: Title + Inline KPI Pills in One Row */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '10px',
+          marginBottom: '10px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>🗺️</span>
+            <span>Field Geography & Territory Mapping</span>
+          </h2>
+        </div>
 
-      {/* KPI Stats Bar */}
-      <GeographyMappingStats
-        totalStaff={fieldUsers.length}
-        mappedCount={mappedCount}
-        unmappedCount={unmappedCount}
-        totalHqsCount={hqs.length}
-      />
+        {/* Slim Inline KPI Badges */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ padding: '3px 8px', background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: '12px', fontSize: '11.5px', fontWeight: 700 }}>
+            👥 {fieldUsers.length} Field Staff
+          </span>
+          <span style={{ padding: '3px 8px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '12px', fontSize: '11.5px', fontWeight: 700 }}>
+            🟢 {mappedCount} Mapped
+          </span>
+          {unmappedCount > 0 && (
+            <span style={{ padding: '3px 8px', background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', borderRadius: '12px', fontSize: '11.5px', fontWeight: 700 }}>
+              ⚠️ {unmappedCount} Pending
+            </span>
+          )}
+        </div>
+      </div>
 
-      {/* Search & Filter Toolbar */}
+      {/* Single-Row Compact Filter Toolbar */}
       <GeographyMappingFilters
         q={q}
         setQ={setQ}
@@ -170,7 +189,7 @@ export function GeographyMapping({ users, onManageCoverage }: GeographyMappingPr
         totalStaff={fieldUsers.length}
       />
 
-      {/* High-Definition Table */}
+      {/* Data-Dense High-Efficiency Table */}
       <GeographyMappingTable
         users={filteredList}
         hqs={hqs}

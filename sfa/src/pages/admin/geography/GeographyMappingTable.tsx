@@ -47,21 +47,21 @@ export function GeographyMappingTable({
       style={{
         background: '#ffffff',
         border: '1px solid #e2e8f0',
-        borderRadius: '12px',
+        borderRadius: '8px',
         overflow: 'hidden',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
       }}
     >
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12.5px' }}>
           <thead>
-            <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              <th style={{ padding: '12px 16px', fontWeight: 700 }}>Representative & Code</th>
-              <th style={{ padding: '12px 16px', fontWeight: 700 }}>Role & Division</th>
-              <th style={{ padding: '12px 16px', fontWeight: 700 }}>Base Headquarter</th>
-              <th style={{ padding: '12px 16px', fontWeight: 700 }}>Supervised / Covering HQs</th>
-              <th style={{ padding: '12px 16px', fontWeight: 700 }}>Assigned Beat Areas</th>
-              <th style={{ padding: '12px 16px', fontWeight: 700, textAlign: 'center' }}>Action</th>
+            <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              <th style={{ padding: '8px 12px', fontWeight: 700 }}>Representative & Code</th>
+              <th style={{ padding: '8px 12px', fontWeight: 700 }}>Role & Division</th>
+              <th style={{ padding: '8px 12px', fontWeight: 700 }}>Base Headquarter</th>
+              <th style={{ padding: '8px 12px', fontWeight: 700 }}>Covering HQs (Managers)</th>
+              <th style={{ padding: '8px 12px', fontWeight: 700 }}>Assigned Beat Areas (MR)</th>
+              <th style={{ padding: '8px 12px', fontWeight: 700, textAlign: 'center' }}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -86,74 +86,62 @@ export function GeographyMappingTable({
                   key={u.id}
                   style={{
                     borderBottom: '1px solid #f1f5f9',
-                    transition: 'background-color 0.15s ease',
+                    transition: 'background-color 0.12s ease',
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
                 >
-                  <td style={{ padding: '12px 16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <td style={{ padding: '8px 12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <div
                         style={{
-                          width: '36px',
-                          height: '36px',
-                          borderRadius: '8px',
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '6px',
                           background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                           color: '#ffffff',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           fontWeight: 700,
-                          fontSize: '14px',
+                          fontSize: '12px',
                           flexShrink: 0,
                         }}
                       >
                         {u.fullName?.charAt(0)?.toUpperCase() || 'U'}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{u.fullName}</div>
-                        <div style={{ fontSize: '11.5px', color: '#64748b', display: 'flex', gap: '6px', alignItems: 'center', marginTop: '2px' }}>
-                          <span style={{ background: '#f1f5f9', padding: '1px 5px', borderRadius: '4px', fontFamily: 'monospace' }}>
-                            {u.userId}
-                          </span>
-                          {u.empCode && <span>• Emp: {u.empCode}</span>}
-                        </div>
+                        <b style={{ color: '#0f172a' }}>{u.fullName}</b>
+                        <small style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>
+                          <code>{u.userId}</code> {u.empCode ? `• ${u.empCode}` : ''}
+                        </small>
                       </div>
                     </div>
                   </td>
 
-                  <td style={{ padding: '12px 16px' }}>
+                  <td style={{ padding: '8px 12px' }}>
                     <Badge v={u.role} />
                     {userDivId && (
-                      <div style={{ fontSize: '11.5px', color: '#0284c7', fontWeight: 600, marginTop: '4px' }}>
-                        🏢 {getDivisionName(userDivId)}
-                      </div>
+                      <small style={{ color: '#0284c7', fontWeight: 600, display: 'block', marginTop: '2px' }}>
+                        {getDivisionName(userDivId)}
+                      </small>
                     )}
                   </td>
 
-                  <td style={{ padding: '12px 16px' }}>
+                  <td style={{ padding: '8px 12px' }}>
                     {u.hqId ? (
                       <div>
-                        <div style={{ fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span>📍</span>
-                          <span>{getHqName(u.hqId)}</span>
-                        </div>
-                        {stateName && (
-                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
-                            State: {stateName}
-                          </div>
-                        )}
+                        <b style={{ color: '#0f172a' }}>📍 {getHqName(u.hqId)}</b>
+                        {stateName && <small style={{ color: '#64748b', display: 'block' }}>{stateName}</small>}
                       </div>
                     ) : (
-                      <span style={{ color: '#ef4444', fontSize: '12px', fontWeight: 600 }}>⚠️ No Base HQ</span>
+                      <span style={{ color: '#ef4444', fontSize: '11.5px', fontWeight: 600 }}>⚠️ No Base HQ</span>
                     )}
                   </td>
 
-                  <td style={{ padding: '12px 16px' }}>
+                  <td style={{ padding: '8px 12px' }}>
                     {isMr ? (
-                      <span style={{ color: '#94a3b8', fontSize: '12px', fontStyle: 'italic' }}>
-                        N/A (MR Base Territory)
-                      </span>
+                      <span style={{ color: '#94a3b8', fontSize: '11.5px' }}>N/A (MR Base)</span>
                     ) : coveringHqNames.length > 0 ? (
                       <div>
                         <span style={{ fontWeight: 600, color: '#0f172a' }}>
@@ -162,31 +150,29 @@ export function GeographyMappingTable({
                         {coveringHqNames.length > 2 && (
                           <span
                             style={{
-                              fontSize: '11px',
+                              fontSize: '10.5px',
                               color: '#0284c7',
                               background: '#e0f2fe',
-                              padding: '2px 6px',
+                              padding: '1px 5px',
                               borderRadius: '4px',
-                              marginLeft: '6px',
+                              marginLeft: '4px',
                               fontWeight: 700,
                             }}
                           >
-                            +{coveringHqNames.length - 2} more
+                            +{coveringHqNames.length - 2}
                           </span>
                         )}
                       </div>
                     ) : (
-                      <span style={{ color: '#f59e0b', fontSize: '12px', fontWeight: 600, background: '#fffbeb', padding: '3px 8px', borderRadius: '6px' }}>
+                      <span style={{ color: '#f59e0b', fontSize: '11.5px', fontWeight: 600 }}>
                         ⚠️ None mapped
                       </span>
                     )}
                   </td>
 
-                  <td style={{ padding: '12px 16px' }}>
+                  <td style={{ padding: '8px 12px' }}>
                     {!isMr ? (
-                      <span style={{ color: '#94a3b8', fontSize: '12px', fontStyle: 'italic' }}>
-                        N/A (HQ-Level Supervision)
-                      </span>
+                      <span style={{ color: '#94a3b8', fontSize: '11.5px' }}>N/A (Supervisory)</span>
                     ) : assignedAreaNames.length > 0 ? (
                       <div>
                         <span style={{ fontWeight: 600, color: '#0f172a' }}>
@@ -195,49 +181,48 @@ export function GeographyMappingTable({
                         {assignedAreaNames.length > 2 && (
                           <span
                             style={{
-                              fontSize: '11px',
+                              fontSize: '10.5px',
                               color: '#16a34a',
                               background: '#dcfce7',
-                              padding: '2px 6px',
+                              padding: '1px 5px',
                               borderRadius: '4px',
-                              marginLeft: '6px',
+                              marginLeft: '4px',
                               fontWeight: 700,
                             }}
                           >
-                            +{assignedAreaNames.length - 2} more
+                            +{assignedAreaNames.length - 2}
                           </span>
                         )}
                       </div>
                     ) : (
-                      <span style={{ color: '#f59e0b', fontSize: '12px', fontWeight: 600, background: '#fffbeb', padding: '3px 8px', borderRadius: '6px' }}>
-                        ⚠️ No areas assigned
+                      <span style={{ color: '#f59e0b', fontSize: '11.5px', fontWeight: 600 }}>
+                        ⚠️ No areas
                       </span>
                     )}
                   </td>
 
-                  <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                  <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                     <button
                       type="button"
                       onClick={() => onManageCoverage(u)}
                       style={{
-                        padding: '6px 14px',
+                        padding: '4px 10px',
                         background: isMapped
                           ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
                           : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                         color: '#ffffff',
                         border: 'none',
-                        borderRadius: '6px',
+                        borderRadius: '5px',
                         fontWeight: 700,
-                        fontSize: '12px',
+                        fontSize: '11.5px',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        gap: '4px',
                       }}
                     >
                       <span>⚡</span>
-                      <span>Manage Coverage</span>
+                      <span>Manage</span>
                     </button>
                   </td>
                 </tr>
@@ -246,10 +231,8 @@ export function GeographyMappingTable({
 
             {users.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-                  <div style={{ fontSize: '32px', marginBottom: '8px' }}>🗺️</div>
-                  <div style={{ fontWeight: 600, fontSize: '14px', color: '#334155' }}>No Representatives Found</div>
-                  <div style={{ fontSize: '12px', marginTop: '4px' }}>Try adjusting your search query or filter selections.</div>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                  No representatives found matching filters.
                 </td>
               </tr>
             )}

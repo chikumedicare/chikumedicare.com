@@ -20,9 +20,7 @@ export class CloudflareHeadOfficeGateway implements IHeadOfficeGateway {
   async saveDivision(div: Partial<Division>): Promise<Division> {
     const payload = {
       name: div.name,
-      code: div.code,
       division_code: div.code,
-      div_code: div.code,
       head_office_id: div.headOfficeId || undefined,
       head_user_id: div.headUserId || undefined,
       head_user_name: div.headUserName || undefined,

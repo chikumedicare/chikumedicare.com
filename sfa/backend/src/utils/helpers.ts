@@ -36,7 +36,7 @@ const ENTITY_CODE_MAP: Record<string, { codeField: string; prefix: string; paddi
   stockists: { codeField: 'stockist_code', prefix: 'SK', padding: 4 },
   products: { codeField: 'product_code', prefix: 'PR', padding: 4 },
   employees: { codeField: 'emp_code', prefix: 'EMP', padding: 3 },
-  divisions: { codeField: 'division_code', prefix: 'DIV-', padding: 2 },
+  divisions: { codeField: 'division_code', prefix: 'CHIKU', padding: 1 },
 };
 
 export async function generateEntityCode(env: Env, collection: string, body: any, action: string) {

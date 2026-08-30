@@ -16,7 +16,7 @@ export function DivisionModal({ division, item, onSave, onClose }: DivisionModal
   const { headOffices } = useGeographyStore();
   const defaultHoId = headOffices.length > 0 ? headOffices[0].id : '';
 
-  const [code, setCode] = useState(current?.code || '');
+  const [code, setCode] = useState(current?.code || 'CHIKU1');
   const [name, setName] = useState(current?.name || '');
   const [headOfficeId, setHeadOfficeId] = useState(current?.headOfficeId || defaultHoId);
   const [headUserName, setHeadUserName] = useState(current?.headUserName || '');
@@ -36,7 +36,7 @@ export function DivisionModal({ division, item, onSave, onClose }: DivisionModal
       setDescription(current.description || '');
       setIsActive(current.isActive ? 'ACTIVE' : 'INACTIVE');
     } else {
-      setCode('');
+      setCode('CHIKU1');
       setName('');
       setHeadOfficeId(defaultHoId);
       setHeadUserName('');
@@ -56,8 +56,14 @@ export function DivisionModal({ division, item, onSave, onClose }: DivisionModal
     setSaving(true);
     setError('');
 
+    if (!code.trim()) {
+      setError('Company / Division Code is required (e.g. CHIKU1)');
+      return;
+    }
+
     const draft: Partial<Division> = {
-      ...(current?.id ? { id: current.id, code: current.code } : {}),
+      ...(current?.id ? { id: current.id } : {}),
+      code: code.trim().toUpperCase(),
       name: name.trim(),
       headOfficeId: headOfficeId || undefined,
       headUserName: headUserName.trim() || undefined,
@@ -195,13 +201,20 @@ export function DivisionModal({ division, item, onSave, onClose }: DivisionModal
               )}
             </div>
 
-            {!current ? (
-              <div style={{ padding: '10px 14px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', fontSize: '12.5px', color: '#166534' }}>
-                ℹ️ <b>Automatic Code:</b> Unique division code <code>DIV-##</code> is auto-allocated upon creation.
+            <div>
+              <TextField
+                label="Company / Division Code (Login Key) *"
+                value={code}
+                onChange={(v) => { setCode(v.toUpperCase().replace(/\s+/g, '')); setError(''); }}
+                placeholder="e.g. CHIKU1, CHIKU2"
+              />
+              <div style={{ fontSize: '11.5px', color: '#0369a1', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span>🔑</span>
+                <span>
+                  <b>Multi-Tenant Login Code:</b> Staff will log in using <code>{code || 'CHIKU1'} + Login ID + Password</code>.
+                </span>
               </div>
-            ) : (
-              <TextField label="Division Code (Immutable)" value={code} disabled />
-            )}
+            </div>
 
             <TextField
               label="Division Name *"

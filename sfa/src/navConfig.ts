@@ -28,8 +28,7 @@ export const navCategories: NavCategory[] = [
     icon: '👥',
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-      { id: 'employees', label: 'Employee Master', icon: '👤' },
-      { id: 'users', label: 'User Management', icon: '🆔' },
+      { id: 'employees', label: 'Employee & User Master', icon: '👥' },
       { id: 'hierarchy', label: 'Role & Hierarchy', icon: '🌳' },
       { id: 'division-manage', label: 'Division Manage', icon: '💼' },
       { id: 'transfer', label: 'Transfer', icon: '🔄' },

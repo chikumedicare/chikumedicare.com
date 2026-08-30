@@ -6,8 +6,7 @@ import { useHrStore } from '../store/hr/useHrStore';
 
 // 👑 Portal 1: Admin / Owner Governance Components
 import { Dashboard } from './admin/dashboard/Dashboard';
-import { EmployeeMaster } from './admin/employee/EmployeeMaster';
-import { UserManagement } from './admin/user/UserManagement';
+import { EmployeeUserMaster } from './admin/employee_user/EmployeeUserMaster';
 import { DeviceManagement } from './admin/device/DeviceManagement';
 import { RoleHierarchy } from './admin/hierarchy/RoleHierarchy';
 import { DivisionManage } from './admin/division/DivisionManage';
@@ -84,8 +83,7 @@ export function PageContentRouter({
   // 👑 Admin & Owner Governance Routing
   if (pageStr === 'dashboard') return <Dashboard go={open} />;
   if (pageStr === 'head-office') return <HeadOfficeMaster />;
-  if (pageStr === 'employees' || pageStr === 'hr' || pageStr === 'hr-hub') return <EmployeeMaster employees={hrStore.employees} users={hrStore.users} onAdd={() => {}} onEdit={() => {}} />;
-  if (pageStr === 'users') return <UserManagement users={hrStore.users} onAdd={() => {}} onEdit={() => {}} onToggleActive={() => {}} />;
+  if (pageStr === 'employees' || pageStr === 'users' || pageStr === 'hr' || pageStr === 'hr-hub') return <EmployeeUserMaster />;
   if (pageStr === 'division-manage') return <DivisionManage />;
   if (pageStr === 'device-management') return <DeviceManagement users={hrStore.users} onResetDevice={async () => ({ success: true })} onFetchAudit={async () => []} />;
   if (pageStr === 'hierarchy') return <RoleHierarchy users={hrStore.users} onUpdateHierarchy={async () => ({ success: true })} />;

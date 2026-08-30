@@ -150,6 +150,7 @@ export function EmployeeUserRoleTab({
                 role: newRole,
                 userId: updatedCode,
                 empCode: updatedCode,
+                password: !isEditing ? updatedCode.toLowerCase() : prev.password,
                 reportsToId: '', // Reset manager on role change to prevent invalid hierarchy
                 hqId: (newRole === 'ADMIN' || newRole === 'OWNER') ? '' : prev.hqId,
               };
@@ -249,11 +250,11 @@ export function EmployeeUserRoleTab({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', alignItems: 'flex-end' }}>
         <div style={{ position: 'relative' }}>
           <TextField
-            label={isEditing ? 'New Password (leave blank to keep current)' : 'Initial Login Password *'}
+            label={isEditing ? 'New Password (leave blank to keep current)' : `Initial Login Password (Default: ${draft.userId.toLowerCase()}) *`}
             type={showPassword ? 'text' : 'password'}
             value={draft.password || ''}
             onChange={(v) => setDraft((prev) => ({ ...prev, password: v }))}
-            placeholder={isEditing ? '••••••••' : 'Min 6 chars alphanumeric'}
+            placeholder={isEditing ? '••••••••' : draft.userId.toLowerCase()}
           />
           <button
             type="button"

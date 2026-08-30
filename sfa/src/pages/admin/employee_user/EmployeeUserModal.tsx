@@ -59,7 +59,7 @@ export function EmployeeUserModal({
       gender: 'MALE',
       maritalStatus: 'SINGLE',
       bloodGroup: 'O+',
-      password: '',
+      password: nextCode.toLowerCase(),
     };
   });
 

@@ -891,3 +891,13 @@ CREATE TABLE IF NOT EXISTS head_offices (
 
 CREATE INDEX IF NOT EXISTS idx_head_offices_code ON head_offices (code);
 CREATE INDEX IF NOT EXISTS idx_head_offices_active ON head_offices (is_active);
+
+
+-- 23. ENTITY SEQUENCES
+CREATE TABLE IF NOT EXISTS entity_sequences (
+    entity_type TEXT PRIMARY KEY,
+    last_seq INTEGER NOT NULL DEFAULT 0,
+    prefix TEXT NOT NULL,
+    padding INTEGER NOT NULL DEFAULT 3,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

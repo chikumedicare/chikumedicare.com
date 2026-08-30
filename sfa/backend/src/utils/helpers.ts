@@ -36,7 +36,7 @@ const ENTITY_CODE_MAP: Record<string, { codeField: string; prefix: string; paddi
   stockists: { codeField: 'stockist_code', prefix: 'SK', padding: 4 },
   products: { codeField: 'product_code', prefix: 'PR', padding: 4 },
   employees: { codeField: 'emp_code', prefix: 'EMP', padding: 3 },
-  divisions: { codeField: 'div_code', prefix: 'DIV', padding: 2 },
+  divisions: { codeField: 'division_code', prefix: 'DIV-', padding: 2 },
 };
 
 export async function generateEntityCode(env: Env, collection: string, body: any, action: string) {
@@ -44,36 +44,71 @@ export async function generateEntityCode(env: Env, collection: string, body: any
   if (!config) return;
 
   const { codeField, prefix, padding } = config;
+  const existingVal = body[codeField] || (collection === 'divisions' ? (body.division_code || body.div_code || body.code) : null);
 
-  if (action === 'CREATE' && (!body[codeField] || typeof body[codeField] !== 'string' || body[codeField].trim() === '')) {
+  if (action === 'CREATE' && (!existingVal || typeof existingVal !== 'string' || existingVal.trim() === '')) {
     let candidateCode = '';
     let isUnique = false;
     let attempts = 0;
 
     while (!isUnique && attempts < 50) {
       attempts++;
-      const updateResult: any = await env.chikusfa_db.prepare(`
-        UPDATE entity_sequences 
-        SET last_seq = last_seq + 1 
-        WHERE entity_type = ? 
-        RETURNING last_seq, prefix, padding
-      `).bind(collection).first();
+      let seq = attempts;
+      let pref = prefix;
+      let pad = padding;
 
-      const seq = updateResult?.last_seq || 1;
-      const pref = updateResult?.prefix || prefix;
-      const pad = updateResult?.padding || padding;
+      try {
+        const updateResult: any = await env.chikusfa_db.prepare(`
+          UPDATE entity_sequences 
+          SET last_seq = last_seq + 1 
+          WHERE entity_type = ? 
+          RETURNING last_seq, prefix, padding
+        `).bind(collection).first();
+
+        if (updateResult) {
+          seq = updateResult.last_seq;
+          pref = updateResult.prefix || prefix;
+          pad = updateResult.padding || padding;
+        } else {
+          await env.chikusfa_db.prepare(`
+            INSERT OR IGNORE INTO entity_sequences (entity_type, last_seq, prefix, padding)
+            VALUES (?, ?, ?, ?)
+          `).bind(collection, attempts, prefix, padding).run();
+        }
+      } catch {
+        try {
+          const countRes: any = await env.chikusfa_db.prepare(`SELECT COUNT(*) as count FROM ${collection}`).first();
+          seq = (countRes?.count || 0) + attempts;
+        } catch {
+          seq = attempts;
+        }
+      }
+
       candidateCode = `${pref}${String(seq).padStart(pad, '0')}`;
 
-      const existing: any = await env.chikusfa_db.prepare(
-        `SELECT id FROM ${collection} WHERE ${codeField} = ?`
-      ).bind(candidateCode).first();
+      try {
+        const existing: any = await env.chikusfa_db.prepare(
+          `SELECT id FROM ${collection} WHERE ${codeField} = ?`
+        ).bind(candidateCode).first();
 
-      if (!existing) {
+        if (!existing) {
+          isUnique = true;
+        }
+      } catch {
         isUnique = true;
       }
     }
 
     body[codeField] = candidateCode;
+    if (collection === 'divisions') {
+      body.division_code = candidateCode;
+      delete body.div_code;
+      delete body.code;
+    }
+  } else if (collection === 'divisions') {
+    if (existingVal) body.division_code = existingVal;
+    delete body.div_code;
+    delete body.code;
   }
 }
 

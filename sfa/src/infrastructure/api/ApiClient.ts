@@ -12,6 +12,7 @@ export class ApiClient {
   private static _accessToken: string | null = null;
   private static _isRefreshing = false;
   private static _refreshSubscribers: ((token: string | null) => void)[] = [];
+  private static _inFlight = new Map<string, Promise<any>>();
 
   static getAccessToken(): string | null {
     return this._accessToken;
@@ -57,7 +58,26 @@ export class ApiClient {
   }
 
   static async fetch<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
+    const method = (options.method || 'GET').toUpperCase();
     const url = `${this.baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+
+    // De-duplicate in-flight GET requests to eliminate parallel identical network calls
+    if (method === 'GET' && !options.body) {
+      const existing = this._inFlight.get(url);
+      if (existing) {
+        return existing as Promise<T>;
+      }
+      const p = this._executeFetch<T>(url, path, options).finally(() => {
+        this._inFlight.delete(url);
+      });
+      this._inFlight.set(url, p);
+      return p;
+    }
+
+    return this._executeFetch<T>(url, path, options);
+  }
+
+  private static async _executeFetch<T = unknown>(url: string, path: string, options: RequestInit = {}): Promise<T> {
     const defaultHeaders = this.getHeaders();
 
     let res = await fetch(url, {

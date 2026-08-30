@@ -10,6 +10,7 @@ export default {
 			'Access-Control-Allow-Credentials': 'true',
 			'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
 			'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Financial-Year, X-Device-Id, X-GPS-Enabled, X-Requested-With, X-CSRF-Protection, x-financial-year, x-device-id, x-gps-enabled, x-requested-with, x-csrf-protection',
+			'Access-Control-Max-Age': '86400',
 		};
 
 		if (request.method === 'OPTIONS') {

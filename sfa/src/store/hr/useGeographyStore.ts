@@ -7,13 +7,22 @@ import { ApiClient } from '../../infrastructure/api/ApiClient';
 
 export type TerritoryType = 'HO' | 'Zone' | 'State' | 'HQ' | 'Area' | 'Beat';
 
+let _cachedHo: HeadOfficeRecord[] | null = null;
+let _cachedZones: Zone[] | null = null;
+let _cachedStates: State[] | null = null;
+let _cachedHqs: Headquarter[] | null = null;
+let _cachedAreas: Area[] | null = null;
+let _cachedBeats: Beat[] | null = null;
+let _lastGeoFetch = 0;
+const GEO_CACHE_TTL = 30000; // 30 seconds fresh cache
+
 export function useGeographyStore() {
-  const [headOffices, setHeadOffices] = useState<HeadOfficeRecord[]>([]);
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [states, setStates] = useState<State[]>([]);
-  const [hqs, setHqs] = useState<Headquarter[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
-  const [beats, setBeats] = useState<Beat[]>([]);
+  const [headOffices, setHeadOffices] = useState<HeadOfficeRecord[]>(_cachedHo || []);
+  const [zones, setZones] = useState<Zone[]>(_cachedZones || []);
+  const [states, setStates] = useState<State[]>(_cachedStates || []);
+  const [hqs, setHqs] = useState<Headquarter[]>(_cachedHqs || []);
+  const [areas, setAreas] = useState<Area[]>(_cachedAreas || []);
+  const [beats, setBeats] = useState<Beat[]>(_cachedBeats || []);
   const [selectedDivisionId, setSelectedDivisionId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +30,17 @@ export function useGeographyStore() {
   const geoGateway = GatewayContainer.getGeographyGateway();
   const userGateway = GatewayContainer.getUserGateway();
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (force = false) => {
+    if (!force && _cachedHo && Date.now() - _lastGeoFetch < GEO_CACHE_TTL) {
+      setHeadOffices(_cachedHo);
+      setZones(_cachedZones || []);
+      setStates(_cachedStates || []);
+      setHqs(_cachedHqs || []);
+      setAreas(_cachedAreas || []);
+      setBeats(_cachedBeats || []);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -34,8 +53,7 @@ export function useGeographyStore() {
         geoGateway.getBeats(),
       ]);
 
-      setHeadOffices(
-        (hoRows || []).map((r) => ({
+      const mappedHo: HeadOfficeRecord[] = (hoRows || []).map((r) => ({
           id: String(r.id || ''),
           code: String(r.code || r.cin_number || 'HO-BHO-01'),
           name: String(r.company_name || r.name || r.brand_name || 'Corporate Head Office'),
@@ -48,9 +66,17 @@ export function useGeographyStore() {
           is_active: r.is_active === 1 || r.is_active === true,
           created_at: r.created_at || '',
           updated_at: r.updated_at || '',
-        }))
-      );
+        }));
 
+      _cachedHo = mappedHo;
+      _cachedZones = zList;
+      _cachedStates = sList;
+      _cachedHqs = hList;
+      _cachedAreas = aList;
+      _cachedBeats = bList;
+      _lastGeoFetch = Date.now();
+
+      setHeadOffices(mappedHo);
       if (selectedDivisionId) {
         setZones(zList.filter((z) => !z.divisionId || z.divisionId === selectedDivisionId));
         setStates(sList.filter((s) => !s.divisionId || s.divisionId === selectedDivisionId));
@@ -116,7 +142,7 @@ export function useGeographyStore() {
             }),
           });
         }
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -136,7 +162,7 @@ export function useGeographyStore() {
           method: 'PUT',
           body: JSON.stringify({ is_active: nextActive ? 1 : 0 }),
         });
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -165,7 +191,7 @@ export function useGeographyStore() {
           if (type === 'Area') await geoGateway.createArea(draft);
           if (type === 'Beat') await geoGateway.createBeat(draft);
         }
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };
@@ -186,7 +212,7 @@ export function useGeographyStore() {
         if (type === 'State') await geoGateway.updateState(item.id, { isActive: newActive });
         if (type === 'Area') await geoGateway.updateArea(item.id, { isActive: newActive });
         if (type === 'Beat') await geoGateway.updateBeat(item.id, { isActive: newActive });
-        await refresh();
+        await refresh(true);
         return { success: true };
       } catch (err: unknown) {
         return { success: false, error: getErrorMessage(err) };

@@ -7,13 +7,24 @@ import type { Division, HeadOfficeProfile } from '../../core/domain/hr/headOffic
 import { GatewayContainer } from '../../core/container/GatewayContainer';
 import { getErrorMessage } from '../../utils/dataIntegrity';
 
+let _cachedDivisions: Division[] | null = null;
+let _cachedProfile: HeadOfficeProfile | null = null;
+let _lastFetch = 0;
+const CACHE_TTL = 30000; // 30 seconds fresh cache
+
 export function useHeadOfficeStore() {
-  const [divisions, setDivisions] = useState<Division[]>([]);
-  const [profile, setProfile] = useState<HeadOfficeProfile | null>(null);
+  const [divisions, setDivisions] = useState<Division[]>(_cachedDivisions || []);
+  const [profile, setProfile] = useState<HeadOfficeProfile | null>(_cachedProfile);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchHeadOfficeData = useCallback(async () => {
+  const fetchHeadOfficeData = useCallback(async (force = false) => {
+    if (!force && _cachedDivisions && Date.now() - _lastFetch < CACHE_TTL) {
+      setDivisions(_cachedDivisions);
+      setProfile(_cachedProfile);
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -21,8 +32,11 @@ export function useHeadOfficeStore() {
         GatewayContainer.getHeadOfficeGateway().getDivisions(),
         GatewayContainer.getHeadOfficeGateway().getHeadOfficeProfile(),
       ]);
-      setDivisions(divs || []);
-      setProfile(prof || null);
+      _cachedDivisions = divs || [];
+      _cachedProfile = prof || null;
+      _lastFetch = Date.now();
+      setDivisions(_cachedDivisions);
+      setProfile(_cachedProfile);
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
@@ -38,7 +52,7 @@ export function useHeadOfficeStore() {
     setLoading(true);
     try {
       const saved = await GatewayContainer.getHeadOfficeGateway().saveDivision(div);
-      await fetchHeadOfficeData();
+      await fetchHeadOfficeData(true);
       return { success: true, division: saved };
     } catch (err: unknown) {
       return { success: false, error: getErrorMessage(err) };
@@ -51,7 +65,7 @@ export function useHeadOfficeStore() {
     setLoading(true);
     try {
       await GatewayContainer.getHeadOfficeGateway().deleteDivision(id);
-      await fetchHeadOfficeData();
+      await fetchHeadOfficeData(true);
       return { success: true };
     } catch (err: unknown) {
       return { success: false, error: getErrorMessage(err) };

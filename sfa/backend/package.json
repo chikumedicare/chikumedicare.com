@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
-    "start": "wrangler dev",
+    "dev": "wrangler dev --remote --port 8787",
+    "start": "wrangler dev --remote --port 8787",
     "test": "vitest",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "dev:local": "wrangler dev --port 8787"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.12.4",

@@ -223,6 +223,7 @@ export function EmployeeUserModal({
               isEditing={isEditing}
               divisions={divisions}
               hqs={hqs}
+              states={states}
               allUsers={allUsers}
               showPassword={showPassword}
               setShowPassword={setShowPassword}

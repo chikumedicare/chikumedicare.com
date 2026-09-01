@@ -61,6 +61,12 @@ export function EmployeeUserRoleTab({
     l: `${d.name} (${d.code || 'DIV'})`,
   }));
 
+  // Filter States by Division
+  const availableStates = states.filter((s) => {
+    if (draft.divisionId && s.divisionId && s.divisionId !== draft.divisionId) return false;
+    return true;
+  });
+
   // Filter HQs by selected State and Division
   const availableHqs = hqs.filter((h) => {
     if (selectedStateId && h.stateId && h.stateId !== selectedStateId) return false;
@@ -199,7 +205,7 @@ export function EmployeeUserRoleTab({
               }}
               options={[
                 { v: '', l: '-- All States --' },
-                ...states.map((s) => ({ v: s.id, l: `📍 ${s.name}` })),
+                ...availableStates.map((s) => ({ v: s.id, l: `📍 ${s.name} (${s.code || 'ST'})` })),
               ]}
             />
 

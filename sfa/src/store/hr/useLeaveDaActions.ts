@@ -69,23 +69,25 @@ export function useLeaveDaActions({
         setLoading(true);
         let count = 0;
         for (const u of targetUsers) {
-          const existing = leaves.find((l) => l.employeeId === u.empCode && l.year === year);
+          const existing = leaves.find((l) => (l.employeeId === u.id || l.employeeId === u.empCode || l.employeeId === u.userId) && l.year === year);
           if (existing) {
             await leaveGateway.updateLeaveAllocation(existing.id, {
-              casualLeave: cl,
-              sickLeave: sl,
-              privilegeLeave: pl,
-              totalLeave: cl + sl + pl,
+              cl,
+              sl,
+              pl,
+              year,
             });
           } else {
             await leaveGateway.createLeaveAllocation({
-              employeeId: u.empCode || u.userId,
+              employeeId: u.id,
+              employeeName: u.fullName,
+              designation: u.designation || u.role,
+              hqName: u.hqId || '',
               year,
-              casualLeave: cl,
-              sickLeave: sl,
-              privilegeLeave: pl,
-              totalLeave: cl + sl + pl,
-              leavesTaken: 0,
+              cl,
+              sl,
+              pl,
+              isActive: true,
             });
           }
           count++;

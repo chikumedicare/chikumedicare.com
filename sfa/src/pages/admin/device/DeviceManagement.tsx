@@ -1,24 +1,33 @@
 import { getErrorMessage } from '../../../utils/dataIntegrity';
-import React, { useState } from 'react';
-import { Head } from '../../../components/Head';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Badge } from '../../../components/Badge';
 import type { SfaUser } from '../../../core/domain/hr/user.types';
 import type { LoginAudit } from '../../../core/domain/hr/lifecycle.types';
 import { useHeadOfficeStore } from '../../../store/hr/useHeadOfficeStore';
 import { useAuthSessionStore } from '../../../store/hr/useAuthSessionStore';
+import { useHrStore } from '../../../store/hr/useHrStore';
+import { CloudflareUserGateway } from '../../../infrastructure/providers/cloudflare/CloudflareUserGateway';
 import { LoginHistoryModal } from '../user/LoginHistoryModal';
+import { DeviceResetModals } from './DeviceResetModals';
 
 export function DeviceManagement({
-  users,
+  users: propUsers,
   onResetDevice,
   onFetchAudit,
   onUnlockUser,
 }: {
-  users: SfaUser[];
-  onResetDevice: (u: SfaUser) => Promise<{ success: boolean; error?: string }>;
-  onFetchAudit: (userId: string) => Promise<LoginAudit[]>;
+  users?: SfaUser[];
+  onResetDevice?: (u: SfaUser) => Promise<{ success: boolean; error?: string }>;
+  onFetchAudit?: (userId: string) => Promise<LoginAudit[]>;
   onUnlockUser?: (userId: string) => Promise<{ success: boolean; error?: string }>;
 }) {
+  const userGateway = useMemo(() => new CloudflareUserGateway(), []);
+  const { users: storeUsers, refresh: refreshHr } = useHrStore();
+  const { divisions, refresh: refreshHo } = useHeadOfficeStore();
+  const { role } = useAuthSessionStore();
+
+  const users = propUsers || storeUsers;
+
   const [q, setQ] = useState('');
   const [selectedUser, setSelectedUser] = useState<SfaUser | null>(null);
   const [auditLogs, setAuditLogs] = useState<LoginAudit[]>([]);
@@ -29,37 +38,36 @@ export function DeviceManagement({
   const [resetDoneMessage, setResetDoneMessage] = useState<string | null>(null);
   const [isResetting, setIsResetting] = useState(false);
 
-  const { divisions } = useHeadOfficeStore();
-  const { role } = useAuthSessionStore();
+  useEffect(() => {
+    refreshHr(true);
+    refreshHo(true);
+  }, [refreshHr, refreshHo]);
 
   const getDivisionName = (divId?: string) => {
     if (!divId) return '-';
     return divisions.find((d) => d.id === divId)?.name || divId;
   };
 
-  const list = users.filter((u) =>
-    `${u.fullName} ${u.userId} ${u.empCode} ${u.deviceModel || ''} ${u.deviceName || ''} ${u.osVersion || ''}`
-      .toLowerCase()
-      .includes(q.toLowerCase())
-  );
+  const list = users.filter((u) => `${u.fullName} ${u.userId} ${u.empCode} ${u.deviceModel || ''} ${u.deviceName || ''} ${u.osVersion || ''}`.toLowerCase().includes(q.toLowerCase()));
 
   const totalUsers = users.length;
   const boundDevices = users.filter((u) => !!u.deviceId).length;
   const unboundDevices = totalUsers - boundDevices;
   const lockedUsers = users.filter((u) => (u.failedLoginAttempts && u.failedLoginAttempts > 0) || !!u.lockedUntil).length;
 
-  const canResetDevice = (target: SfaUser): boolean => {
-    // System Admins & Owners have authority to reset mobile device bindings for all roles (including OWNER)
-    if (role === 'OWNER' || role === 'ADMIN') return true;
-    return false;
-  };
+  const canResetDevice = (target: SfaUser): boolean => role === 'OWNER' || role === 'ADMIN';
 
   const handleOpenAudit = async (u: SfaUser) => {
     setSelectedUser(u);
     setAuditLoading(true);
     try {
-      const logs = await onFetchAudit(u.id);
-      setAuditLogs(logs || []);
+      if (onFetchAudit) {
+        const logs = await onFetchAudit(u.id);
+        setAuditLogs(logs || []);
+      } else {
+        const logs = await userGateway.getUserLoginAudit(u.id);
+        setAuditLogs(logs || []);
+      }
     } catch (e) {
       setAuditLogs([]);
     } finally {
@@ -68,71 +76,127 @@ export function DeviceManagement({
   };
 
   const handleConfirmReset = async () => {
-    if (!resetTargetUser || !onResetDevice) return;
+    if (!resetTargetUser) return;
     setIsResetting(true);
     try {
-      const res = await onResetDevice(resetTargetUser);
-      if (res && res.success) {
+      if (onResetDevice) {
+        const res = await onResetDevice(resetTargetUser);
+        if (res && res.success) {
+          const u = resetTargetUser;
+          setResetTargetUser(null);
+          setResetDoneMessage(
+            `Registered mobile device for "${u.fullName}" (${u.userId}) has been successfully unbound. The user can now log in and bind a new mobile handset on their next login.`
+          );
+          await refreshHr(true);
+        } else {
+          alert(`Failed to reset device: ${res?.error || 'Unknown error'}`);
+        }
+      } else {
+        await userGateway.resetDevice(resetTargetUser.id);
         const u = resetTargetUser;
         setResetTargetUser(null);
-        setResetDoneMessage(
-          `Registered mobile device for "${u.fullName}" (${u.userId}) has been successfully unbound. The user can now log in and bind a new mobile handset on their next login.`
-        );
-      } else {
-        alert(res?.error || 'Failed to reset device');
+        setResetDoneMessage(`Registered mobile device for "${u.fullName}" (${u.userId}) has been successfully unbound. The user can now log in on a new handset.`);
+        await refreshHr(true);
       }
-    } catch (err: unknown) { alert(getErrorMessage(err)); } finally {
+    } catch (err: unknown) {
+      alert(`Error resetting device: ${getErrorMessage(err)}`);
+    } finally {
       setIsResetting(false);
     }
   };
 
-  return (
-    <>
-      <Head
-        title="Device & Session Management"
-        sub="Complete visibility into registered handsets, mobile OS, app versions, and web & mobile login history."
-      />
+  const handleUnlock = async (u: SfaUser) => {
+    if (!window.confirm(`Unlock account for ${u.fullName} (${u.userId})?`)) return;
+    try {
+      if (onUnlockUser) {
+        await onUnlockUser(u.id);
+      } else {
+        await userGateway.unlockAccount(u.id);
+      }
+      await refreshHr(true);
+      alert(`Account for ${u.fullName} has been unlocked successfully!`);
+    } catch (err: unknown) {
+      alert(`Failed to unlock user: ${getErrorMessage(err)}`);
+    }
+  };
 
-      {/* Summary KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '20px' }}>
-        <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Total Users</div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', marginTop: '4px' }}>{totalUsers}</div>
-        </div>
-        <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600, textTransform: 'uppercase' }}>Bound Handsets</div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#16a34a', marginTop: '4px' }}>📱 {boundDevices}</div>
-        </div>
-        <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Unbound / Web Only</div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#64748b', marginTop: '4px' }}>⚪ {unboundDevices}</div>
-        </div>
-        <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <div style={{ fontSize: '12px', color: lockedUsers > 0 ? '#ef4444' : '#64748b', fontWeight: 600, textTransform: 'uppercase' }}>Security Alerts</div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: lockedUsers > 0 ? '#ef4444' : '#0f172a', marginTop: '4px' }}>
-            {lockedUsers > 0 ? `⚠️ ${lockedUsers} Locked` : '✅ Clean'}
+  return (
+    <div style={{ maxWidth: '100%', margin: '0 auto' }}>
+      {/* Compact Header: Title + Inline Metrics */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '10px',
+          marginBottom: '10px',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span>📱</span>
+            <span>Device & Session Management</span>
+          </h2>
+
+          {/* Inline Badges */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ padding: '3px 8px', background: '#f0f9ff', color: '#0369a1', border: '1px solid #bae6fd', borderRadius: '12px', fontSize: '11.5px', fontWeight: 700 }}>
+              👥 {totalUsers} Users
+            </span>
+            <span style={{ padding: '3px 8px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '12px', fontSize: '11.5px', fontWeight: 700 }}>
+              📱 {boundDevices} Mobile Bound
+            </span>
+            <span style={{ padding: '3px 8px', background: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '12px', fontSize: '11.5px', fontWeight: 700 }}>
+              ⚪ {unboundDevices} Unbound
+            </span>
+            {lockedUsers > 0 && (
+              <span style={{ padding: '3px 8px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '12px', fontSize: '11.5px', fontWeight: 700 }}>
+                🔒 {lockedUsers} Locked
+              </span>
+            )}
           </div>
         </div>
       </div>
 
-      <div className="toolbar">
+      {/* Single-Row Search Toolbar */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          padding: '8px 12px',
+          background: '#ffffff',
+          borderRadius: '10px',
+          border: '1px solid #e2e8f0',
+          marginBottom: '10px',
+        }}
+      >
         <input
-          placeholder="Search by Employee, User ID, Device Model, OS or Code..."
+          placeholder="Search representative name, user ID, emp code, device model, or OS..."
           value={q}
           onChange={(e) => setQ(e.target.value)}
+          style={{
+            flex: 1,
+            padding: '6px 12px',
+            borderRadius: '6px',
+            border: '1px solid #cbd5e1',
+            fontSize: '13px',
+          }}
         />
       </div>
 
-      <div className="panel table">
-        <table>
+      {/* High-Density Device Table */}
+      <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
           <thead>
-            <tr>
-              <th>Employee & User ID</th>
-              <th>Role & Division</th>
-              <th>Registered Handset Model</th>
-              <th>OS & App Version</th>
-              <th>Login & Security Status</th>
-              <th>Session & Device Actions</th>
+            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+              <th style={{ padding: '8px 12px', fontWeight: 700 }}>Representative & Code</th>
+              <th style={{ padding: '8px 12px', fontWeight: 700 }}>Role & Division</th>
+              <th style={{ padding: '8px 12px', fontWeight: 700 }}>Bound Mobile Device</th>
+              <th style={{ padding: '8px 12px', fontWeight: 700 }}>Device Specs</th>
+              <th style={{ padding: '8px 12px', fontWeight: 700 }}>Security Status</th>
+              <th style={{ padding: '8px 12px', fontWeight: 700, textAlign: 'center' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -142,69 +206,102 @@ export function DeviceManagement({
               const isLocked = !!u.lockedUntil && new Date(u.lockedUntil) > new Date();
 
               return (
-                <tr key={u.id}>
-                  <td>
-                    <b>{u.fullName}</b>
-                    <small>User ID: <code>{u.userId}</code> | Emp: {u.empCode || '-'}</small>
+                <tr
+                  key={u.id}
+                  style={{ borderBottom: '1px solid #f1f5f9', transition: 'background-color 0.12s ease' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                >
+                  <td style={{ padding: '8px 12px' }}>
+                    <b style={{ color: '#0f172a' }}>{u.fullName}</b>
+                    <small style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>
+                      <code>{u.userId}</code> {u.empCode ? `• ${u.empCode}` : ''}
+                    </small>
                   </td>
-                  <td>
+                  <td style={{ padding: '8px 12px' }}>
                     <Badge v={u.role} />
-                    <small style={{ color: '#0284c7', fontWeight: 500, display: 'block', marginTop: '2px' }}>
+                    <small style={{ color: '#0284c7', fontWeight: 600, display: 'block', marginTop: '2px' }}>
                       {getDivisionName(u.divisionId)}
                     </small>
                   </td>
-                  <td>
-                    <div style={{ fontWeight: 500, color: hasDevice ? '#0f172a' : '#94a3b8' }}>
+                  <td style={{ padding: '8px 12px' }}>
+                    <div style={{ fontWeight: 600, color: hasDevice ? '#0f172a' : '#94a3b8' }}>
                       {hasDevice ? '📱 ' : '⚪ '}{deviceModelDisplay}
                     </div>
                     {hasDevice && u.deviceId && (
-                      <small style={{ color: '#64748b', fontFamily: 'monospace' }}>
+                      <small style={{ color: '#64748b', fontFamily: 'monospace', display: 'block', fontSize: '10.5px' }}>
                         UUID: {u.deviceId.length > 14 ? `${u.deviceId.slice(0, 14)}...` : u.deviceId}
                       </small>
                     )}
-                    {u.registeredOn && (
-                      <small style={{ color: '#94a3b8', display: 'block' }}>
-                        Reg: {new Date(u.registeredOn).toLocaleDateString()}
-                      </small>
-                    )}
                   </td>
-                  <td>
+                  <td style={{ padding: '8px 12px' }}>
                     <div>OS: <b>{u.osVersion || '-'}</b></div>
                     <small style={{ color: '#64748b' }}>App: <b>{u.appVersion || '-'}</b></small>
                   </td>
-                  <td>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <td style={{ padding: '8px 12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                       <Badge v={hasDevice ? 'ACTIVE' : 'INACTIVE'} />
-                      {u.lastLogin && (
-                        <small style={{ color: '#64748b' }}>
-                          Last: {new Date(u.lastLogin).toLocaleDateString()}
-                        </small>
-                      )}
                       {isLocked ? (
-                        <span style={{ fontSize: '11px', color: '#ef4444', fontWeight: 600 }}>🔒 Account Locked</span>
+                        <span style={{ fontSize: '10.5px', color: '#ef4444', fontWeight: 700 }}>🔒 Account Locked</span>
                       ) : (u.failedLoginAttempts && u.failedLoginAttempts > 0) ? (
-                        <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600 }}>⚠️ {u.failedLoginAttempts} Failed Attempts</span>
+                        <span style={{ fontSize: '10.5px', color: '#f59e0b', fontWeight: 700 }}>⚠️ {u.failedLoginAttempts} Failed Attempts</span>
                       ) : null}
                     </div>
                   </td>
-                  <td>
-                    <div className="links" style={{ gap: '8px' }}>
+                  <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                    <div style={{ display: 'inline-flex', gap: '6px' }}>
                       <button
-                        className="link"
-                        style={{ color: '#0284c7', fontWeight: 500 }}
-                        title="View complete Web and Mobile login activity history"
+                        type="button"
                         onClick={() => handleOpenAudit(u)}
+                        style={{
+                          padding: '3px 8px',
+                          background: '#f1f5f9',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '4px',
+                          fontWeight: 600,
+                          fontSize: '11.5px',
+                          cursor: 'pointer',
+                          color: '#0284c7',
+                        }}
                       >
-                        🌐 Login History
+                        🌐 History
                       </button>
-                      {canResetDevice(u) && (
+
+                      {isLocked && (
                         <button
-                          className="link"
-                          style={{ color: '#ef4444', fontWeight: 500 }}
-                          title="Unbind registered mobile device so user can log in on a new handset"
-                          onClick={() => setResetTargetUser(u)}
+                          type="button"
+                          onClick={() => handleUnlock(u)}
+                          style={{
+                            padding: '3px 8px',
+                            background: '#f0fdf4',
+                            border: '1px solid #86efac',
+                            borderRadius: '4px',
+                            fontWeight: 600,
+                            fontSize: '11.5px',
+                            cursor: 'pointer',
+                            color: '#16a34a',
+                          }}
                         >
-                          📱 Reset Device
+                          🔓 Unlock
+                        </button>
+                      )}
+
+                      {canResetDevice(u) && hasDevice && (
+                        <button
+                          type="button"
+                          onClick={() => setResetTargetUser(u)}
+                          style={{
+                            padding: '3px 8px',
+                            background: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            borderRadius: '4px',
+                            fontWeight: 600,
+                            fontSize: '11.5px',
+                            cursor: 'pointer',
+                            color: '#dc2626',
+                          }}
+                        >
+                          📱 Reset
                         </button>
                       )}
                     </div>
@@ -233,86 +330,15 @@ export function DeviceManagement({
         />
       )}
 
-      {/* 2. Device Reset Confirmation Modal */}
-      {resetTargetUser && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
-        }}>
-          <div style={{
-            background: '#ffffff', borderRadius: '16px', padding: '28px', maxWidth: '440px', width: '90%',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', textAlign: 'center'
-          }}>
-            <div style={{
-              width: '56px', height: '56px', borderRadius: '50%', background: '#e0f2fe', color: '#0284c7',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '26px'
-            }}>
-              📱
-            </div>
-            <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 600, color: '#0f172a' }}>
-              Reset Mobile Device?
-            </h3>
-            <p style={{ margin: '0 0 20px', fontSize: '14px', color: '#64748b', lineHeight: 1.5 }}>
-              Reset registered mobile device for <b>{resetTargetUser.fullName}</b> (<code>{resetTargetUser.userId}</code>)?
-              <br /><br />
-              The existing mobile device UUID & FCM binding will be removed. The user will be able to log in on a new handset.
-            </p>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button
-                className="secondary"
-                disabled={isResetting}
-                onClick={() => setResetTargetUser(null)}
-                style={{ flex: 1, padding: '10px 16px', borderRadius: '8px' }}
-              >
-                Cancel
-              </button>
-              <button
-                className="primary"
-                disabled={isResetting}
-                onClick={handleConfirmReset}
-                style={{ flex: 1, padding: '10px 16px', borderRadius: '8px', background: '#0284c7', borderColor: '#0284c7' }}
-              >
-                {isResetting ? 'Resetting...' : 'Yes, Reset Device'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. Device Reset Success Modal */}
-      {resetDoneMessage && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999
-        }}>
-          <div style={{
-            background: '#ffffff', borderRadius: '16px', padding: '28px', maxWidth: '440px', width: '90%',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', textAlign: 'center'
-          }}>
-            <div style={{
-              width: '56px', height: '56px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '28px'
-            }}>
-              ✓
-            </div>
-            <h3 style={{ margin: '0 0 8px', fontSize: '18px', fontWeight: 600, color: '#0f172a' }}>
-              Device Reset Successful!
-            </h3>
-            <p style={{ margin: '0 0 20px', fontSize: '14px', color: '#64748b', lineHeight: 1.5 }}>
-              {resetDoneMessage}
-            </p>
-            <button
-              className="primary"
-              onClick={() => setResetDoneMessage(null)}
-              style={{ width: '100%', padding: '10px 16px', borderRadius: '8px', background: '#16a34a', borderColor: '#16a34a' }}
-            >
-              Done / OK
-            </button>
-          </div>
-        </div>
-      )}
-    </>
+      {/* 2. Device Reset Modals */}
+      <DeviceResetModals
+        resetTargetUser={resetTargetUser}
+        isResetting={isResetting}
+        onCancel={() => setResetTargetUser(null)}
+        onConfirm={handleConfirmReset}
+        resetDoneMessage={resetDoneMessage}
+        onCloseDone={() => setResetDoneMessage(null)}
+      />
+    </div>
   );
 }

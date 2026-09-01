@@ -85,7 +85,7 @@ export function PageContentRouter({
   if (pageStr === 'head-office') return <HeadOfficeMaster />;
   if (pageStr === 'employees' || pageStr === 'users' || pageStr === 'hr' || pageStr === 'hr-hub') return <EmployeeUserMaster />;
   if (pageStr === 'division-manage') return <DivisionManage />;
-  if (pageStr === 'device-management') return <DeviceManagement users={hrStore.users} onResetDevice={async () => ({ success: true })} onFetchAudit={async () => []} />;
+  if (pageStr === 'device-management') return <DeviceManagement />;
   if (pageStr === 'hierarchy') return <RoleHierarchy />;
   if (pageStr === 'transfer') return <TransferWorkflow users={hrStore.users} onComplete={() => {}} back={() => open('dashboard')} />;
   if (pageStr === 'promotion') return <PromotionWorkflow users={hrStore.users} onComplete={() => {}} back={() => open('dashboard')} />;

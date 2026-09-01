@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { SfaUser } from '../../../core/domain/hr/user.types';
 import { useGeographyStore } from '../../../store/hr/useGeographyStore';
 import { useHeadOfficeStore } from '../../../store/hr/useHeadOfficeStore';
@@ -8,11 +8,11 @@ import { GeographyMappingTable } from './GeographyMappingTable';
 import { CoverageModal } from './CoverageModal';
 
 interface GeographyMappingProps {
-  users: SfaUser[];
+  users?: SfaUser[];
   onManageCoverage?: (user: SfaUser) => void;
 }
 
-export function GeographyMapping({ users, onManageCoverage }: GeographyMappingProps) {
+export function GeographyMapping({ users: propUsers, onManageCoverage }: GeographyMappingProps) {
   const [q, setQ] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [divisionFilter, setDivisionFilter] = useState('ALL');
@@ -31,8 +31,17 @@ export function GeographyMapping({ users, onManageCoverage }: GeographyMappingPr
     refresh: refreshGeo,
   } = useGeographyStore();
 
-  const { divisions } = useHeadOfficeStore();
-  const { employees, refresh: refreshHr } = useHrStore();
+  const { divisions, refresh: refreshHo } = useHeadOfficeStore();
+  const { users: storeUsers, employees, refresh: refreshHr } = useHrStore();
+
+  const users = propUsers || storeUsers;
+
+  // Auto-refresh all master stores on mount to ensure fresh live data
+  useEffect(() => {
+    refreshGeo(true);
+    refreshHr(true);
+    refreshHo(true);
+  }, [refreshGeo, refreshHr, refreshHo]);
 
   // Filter out system admins and owners
   const fieldUsers = users.filter((u) => u.role !== 'ADMIN' && u.role !== 'OWNER');

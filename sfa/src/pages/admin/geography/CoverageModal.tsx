@@ -5,12 +5,15 @@ import { CoverageManagerHqsSection } from './CoverageManagerHqsSection';
 import { CoverageMrAreasSection } from './CoverageMrAreasSection';
 
 interface CoverageModalProps {
-  user: SfaUser | null;
+  user: SfaUser;
   hqs: Headquarter[];
   areas: Area[];
-  beats?: Beat[];
+  beats: Beat[];
   states?: State[];
-  onSave: (userId: string, coverage: { hqId: string; coveringHqIds: string[]; areaIds: string[] }) => Promise<{ success: boolean; error?: string }>;
+  onSave: (
+    userId: string,
+    coverage: { hqId: string; coveringHqIds: string[]; areaIds: string[] }
+  ) => Promise<{ success: boolean; error?: string }>;
   back: () => void;
 }
 
@@ -18,12 +21,12 @@ export function CoverageModal({
   user,
   hqs,
   areas,
-  beats = [],
+  beats,
   states = [],
   onSave,
   back,
 }: CoverageModalProps) {
-  const [hqId, setHqId] = useState(user?.hqId || hqs[0]?.id || '');
+  const [hqId, setHqId] = useState<string>(user?.hqId || '');
   const [coveringHqIds, setCoveringHqIds] = useState<string[]>(user?.coveringHqIds || []);
   const [areaIds, setAreaIds] = useState<string[]>(user?.areaIds || []);
   const [saving, setSaving] = useState(false);
@@ -51,7 +54,9 @@ export function CoverageModal({
     );
   };
 
-  const relevantAreas = areas.filter((a) => !hqId || a.hqId === hqId);
+  const relevantAreas = hqId
+    ? areas.filter((a) => a.hqId === hqId)
+    : areas;
 
   const selectAllAreas = () => {
     setAreaIds(relevantAreas.map((a) => a.id));
@@ -71,6 +76,11 @@ export function CoverageModal({
   const managerCascadeAreaIds = areas.filter((a) => Boolean(a.hqId && allSupervisedHqIds.includes(a.hqId))).map((a) => a.id);
 
   const handleSave = async () => {
+    if (!hqId) {
+      setError('Please select an Assigned Base Headquarter');
+      return;
+    }
+
     setSaving(true);
     setError('');
     try {
@@ -85,6 +95,8 @@ export function CoverageModal({
       } else if (res.error) {
         setError(res.error);
       }
+    } catch (err: unknown) {
+      setError((err as any)?.message || 'Failed to save territory coverage');
     } finally {
       setSaving(false);
     }

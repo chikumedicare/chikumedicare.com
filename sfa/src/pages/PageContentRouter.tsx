@@ -90,7 +90,7 @@ export function PageContentRouter({
   if (pageStr === 'transfer') return <TransferWorkflow users={hrStore.users} onComplete={() => {}} back={() => open('dashboard')} />;
   if (pageStr === 'promotion') return <PromotionWorkflow users={hrStore.users} onComplete={() => {}} back={() => open('dashboard')} />;
   if (pageStr === 'geography') return <GeographyMaster />;
-  if (pageStr === 'mapping') return <GeographyMapping users={hrStore.users} />;
+  if (pageStr === 'mapping') return <GeographyMapping />;
   if (pageStr === 'leave' || pageStr === 'leave-allocation') return <LeaveAllocation users={hrStore.users} onBulkAllocate={async () => ({ success: true, count: 0 })} />;
   if (pageStr === 'da-rates') return <DaRates daRates={hrStore.daRates} />;
   if (pageStr === 'sfc-master') return <SfcMaster />;

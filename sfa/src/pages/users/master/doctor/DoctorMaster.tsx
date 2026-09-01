@@ -3,6 +3,7 @@ import { getErrorMessage } from '../../../../utils/dataIntegrity';
 import { GatewayContainer } from '../../../../core/container/GatewayContainer';
 import type { Doctor } from '../../../../core/domain/master/fieldMaster.types';
 import { useGeographyStore } from '../../../../store/hr/useGeographyStore';
+import { useAuthSessionStore } from '../../../../store/hr/useAuthSessionStore';
 import { DoctorMasterHeader } from './DoctorMasterHeader';
 import { DoctorMasterToolbar } from './DoctorMasterToolbar';
 import { DoctorMasterTable } from './DoctorMasterTable';
@@ -13,6 +14,8 @@ export function DoctorMaster({
 }: {
   mode?: 'LIST' | 'ADD' | 'EDIT' | 'DELETE';
 }) {
+  const { currentUser } = useAuthSessionStore();
+  const user = currentUser;
   const { hqs, areas, beats, refresh: refreshGeo } = useGeographyStore();
 
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -47,11 +50,24 @@ export function DoctorMaster({
 
   const handleSave = async (draft: Partial<Doctor>) => {
     try {
-      await GatewayContainer.getFieldMasterGateway().saveDoctor(draft);
-      await refreshList();
-      setShowAddModal(false);
-      setEditingDoctor(null);
-      return { success: true };
+      const isApex = user?.role === 'ADMIN' || user?.role === 'OWNER';
+      if (isApex) {
+        await GatewayContainer.getFieldMasterGateway().saveDoctor(draft);
+        await refreshList();
+        setShowAddModal(false);
+        setEditingDoctor(null);
+        return { success: true };
+      } else {
+        await GatewayContainer.getApprovalGateway().submitRequest({
+          entityType: 'DR_ADD',
+          payload: draft as Record<string, unknown>,
+          remarks: `Doctor Addition Request for Dr. ${draft.doctorName || ''}`,
+        });
+        setShowAddModal(false);
+        setEditingDoctor(null);
+        alert('🚀 Doctor Addition Request submitted successfully for Manager / Admin Approval!');
+        return { success: true };
+      }
     } catch (err: unknown) {
       alert(getErrorMessage(err));
       return { success: false, error: getErrorMessage(err) };
@@ -61,8 +77,18 @@ export function DoctorMaster({
   const handleDelete = async (id: string, name?: string) => {
     if (!window.confirm(`Are you sure you want to delete Doctor: ${name || id}?`)) return;
     try {
-      await GatewayContainer.getFieldMasterGateway().deleteDoctor(id);
-      await refreshList();
+      const isApex = user?.role === 'ADMIN' || user?.role === 'OWNER';
+      if (isApex) {
+        await GatewayContainer.getFieldMasterGateway().deleteDoctor(id);
+        await refreshList();
+      } else {
+        await GatewayContainer.getApprovalGateway().submitRequest({
+          entityType: 'DR_DELETE',
+          payload: { id, doctorName: name },
+          remarks: `Doctor Deletion Request for Dr. ${name || id}`,
+        });
+        alert('🚀 Doctor Deletion Request submitted successfully for Manager / Admin Approval!');
+      }
     } catch (err: unknown) {
       alert(getErrorMessage(err));
     }

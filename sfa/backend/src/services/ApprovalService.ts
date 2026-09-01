@@ -1,6 +1,5 @@
 import { Env, AuthUser } from '../types';
 import { ApprovalRepository } from '../repositories/ApprovalRepository';
-import { DataService } from './DataService';
 import { camelToSnake } from '../utils/helpers';
 
 export class ApprovalService {
@@ -16,16 +15,37 @@ export class ApprovalService {
 		if (!collection && approval.type !== 'LEAVE') return; 
 
 		if (approval.type.includes('_ADD') || approval.type.includes('_EDIT') || approval.type.includes('_DELETE')) {
+			const dataService = (await import('./ServiceRegistry')).ServiceRegistry.get(collection);
+			const id = entityData.id || `${collection.slice(0, 3)}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+			if (collection === 'doctors' && approval.type.includes('_ADD')) {
+				const doctorPayload: any = {
+					name: entityData.name || entityData.doctorName || '',
+					dr_code: entityData.dr_code || entityData.doctorCode || undefined,
+					qualification: entityData.qualification || '',
+					speciality: entityData.speciality || 'General',
+					category: entityData.category || entityData.doctorClass || 'B',
+					hq_id: entityData.hq_id || entityData.hqId || '',
+					area_id: entityData.area_id || entityData.areaId || '',
+					beat_id: entityData.beat_id || entityData.beatId || null,
+					mobile: entityData.mobile || '',
+					email: entityData.email || null,
+					clinic_address: entityData.clinic_address || entityData.clinicAddress || '',
+					dob: entityData.dob || null,
+					anniversary_date: entityData.anniversary_date || entityData.anniversaryDate || null,
+					visit_frequency: Number(entityData.visit_frequency || entityData.visitFrequency || 1),
+					is_active: 1,
+				};
+				await dataService.create(env, id, doctorPayload, authUser);
+				return;
+			}
+
 			const mappedData: any = {};
 			for (const key of Object.keys(entityData)) {
 				if (key !== 'id') {
 					mappedData[camelToSnake(key)] = entityData[key];
 				}
 			}
-			
-			const id = entityData.id || `${collection.slice(0, 3)}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-
-			const dataService = (await import('./ServiceRegistry')).ServiceRegistry.get(collection);
 
 			if (approval.type.includes('_ADD')) {
 				await dataService.create(env, id, mappedData, authUser);
@@ -121,5 +141,3 @@ export class ApprovalService {
 		}
 	}
 }
-
-

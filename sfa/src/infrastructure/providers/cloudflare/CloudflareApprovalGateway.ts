@@ -3,58 +3,73 @@ import type { IApprovalGateway, ApprovalRequest } from '../../../core/contracts/
 
 export class CloudflareApprovalGateway implements IApprovalGateway {
   async getPendingApprovals(): Promise<ApprovalRequest[]> {
-    const rows = await ApiClient.fetch<any[]>('/api/approvals?status=PENDING&limit=200', { method: 'GET' });
-    return (rows || []).map((r) => ({
-      id: String(r.id || ''),
-      entityType: String(r.entity_type || r.entityType || r.type || ''),
-      entityId: String(r.entity_id || r.entityId || ''),
-      action: (r.action || 'CREATE') as any,
-      requestedBy: String(r.requested_by || r.requestedBy || ''),
-      requestedByName: String(r.requested_by_name || r.requestedByName || ''),
-      payload: typeof r.payload === 'string' ? JSON.parse(r.payload || '{}') : (r.payload || r.entityData || {}),
-      status: (r.status || 'PENDING') as 'PENDING' | 'APPROVED' | 'REJECTED',
-      approverId: r.approver_id || r.approverId,
-      approverName: r.approver_name || r.approverName,
-      remarks: r.remarks || r.manager_remarks || r.managerRemarks,
-      createdAt: String(r.created_at || r.createdAt || new Date().toISOString()),
-      updatedAt: String(r.updated_at || r.updatedAt || ''),
-    }));
+    const rows = await ApiClient.fetch<any[]>('/api/approvals/pending', { method: 'GET' });
+    return (rows || []).map((r) => {
+      let parsedPayload: Record<string, unknown> = {};
+      try {
+        parsedPayload = typeof r.entity_data === 'string' ? JSON.parse(r.entity_data) : (r.entity_data || r.payload || {});
+      } catch (e) {
+        parsedPayload = r.entity_data || {};
+      }
+
+      return {
+        id: String(r.id || ''),
+        entityType: String(r.type || r.entity_type || ''),
+        entityId: String(r.entity_id || parsedPayload.id || ''),
+        action: (r.type?.includes('_ADD') ? 'CREATE' : r.type?.includes('_EDIT') ? 'UPDATE' : r.type?.includes('_DELETE') ? 'DELETE' : 'CREATE') as any,
+        requestedBy: String(r.requested_by || ''),
+        requestedByName: String(r.requested_by_name || r.requester_name || r.requested_by || 'Field Representative'),
+        payload: parsedPayload,
+        status: (r.status || 'PENDING') as 'PENDING' | 'APPROVED' | 'REJECTED',
+        approverId: r.manager_id || r.approver_id,
+        remarks: r.manager_remarks || r.remarks || '',
+        createdAt: String(r.created_at || new Date().toISOString()),
+        updatedAt: String(r.updated_at || ''),
+      };
+    });
   }
 
   async getMyApprovals(): Promise<ApprovalRequest[]> {
-    const rows = await ApiClient.fetch<any[]>('/api/approvals?limit=200', { method: 'GET' });
-    return (rows || []).map((r) => ({
-      id: String(r.id || ''),
-      entityType: String(r.entity_type || r.entityType || r.type || ''),
-      entityId: String(r.entity_id || r.entityId || ''),
-      action: (r.action || 'CREATE') as any,
-      requestedBy: String(r.requested_by || r.requestedBy || ''),
-      requestedByName: String(r.requested_by_name || r.requestedByName || ''),
-      payload: typeof r.payload === 'string' ? JSON.parse(r.payload || '{}') : (r.payload || r.entityData || {}),
-      status: (r.status || 'PENDING') as 'PENDING' | 'APPROVED' | 'REJECTED',
-      approverId: r.approver_id || r.approverId,
-      approverName: r.approver_name || r.approverName,
-      remarks: r.remarks || r.manager_remarks || r.managerRemarks,
-      createdAt: String(r.created_at || r.createdAt || new Date().toISOString()),
-      updatedAt: String(r.updated_at || r.updatedAt || ''),
-    }));
+    const rows = await ApiClient.fetch<any[]>('/api/approvals/my', { method: 'GET' });
+    return (rows || []).map((r) => {
+      let parsedPayload: Record<string, unknown> = {};
+      try {
+        parsedPayload = typeof r.entity_data === 'string' ? JSON.parse(r.entity_data) : (r.entity_data || r.payload || {});
+      } catch (e) {
+        parsedPayload = r.entity_data || {};
+      }
+
+      return {
+        id: String(r.id || ''),
+        entityType: String(r.type || r.entity_type || ''),
+        entityId: String(r.entity_id || parsedPayload.id || ''),
+        action: (r.type?.includes('_ADD') ? 'CREATE' : r.type?.includes('_EDIT') ? 'UPDATE' : r.type?.includes('_DELETE') ? 'DELETE' : 'CREATE') as any,
+        requestedBy: String(r.requested_by || ''),
+        requestedByName: String(r.requested_by_name || r.requester_name || r.requested_by || 'Me'),
+        payload: parsedPayload,
+        status: (r.status || 'PENDING') as 'PENDING' | 'APPROVED' | 'REJECTED',
+        approverId: r.manager_id || r.approver_id,
+        remarks: r.manager_remarks || r.remarks || '',
+        createdAt: String(r.created_at || new Date().toISOString()),
+        updatedAt: String(r.updated_at || ''),
+      };
+    });
   }
 
   async submitRequest(request: Partial<ApprovalRequest>): Promise<ApprovalRequest> {
     const payload = {
-      entity_type: request.entityType,
-      entity_id: request.entityId,
-      action: request.action,
-      payload: JSON.stringify(request.payload || {}),
-      remarks: request.remarks,
+      type: request.entityType || 'DR_ADD',
+      entityData: request.payload || {},
+      managerId: request.approverId || null,
+      remarks: request.remarks || '',
     };
-    const res = await ApiClient.fetch<any>('/api/approvals', {
+    const res = await ApiClient.fetch<any>('/api/approvals/request', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
     return {
       id: String(res?.id || 'appr_' + Date.now()),
-      entityType: request.entityType || '',
+      entityType: request.entityType || 'DR_ADD',
       entityId: request.entityId || '',
       action: request.action || 'CREATE',
       requestedBy: String(res?.requested_by || ''),
@@ -65,16 +80,16 @@ export class CloudflareApprovalGateway implements IApprovalGateway {
   }
 
   async processAction(id: string, action: 'APPROVED' | 'REJECTED', remarks?: string): Promise<void> {
-    await ApiClient.fetch('/api/approvals/' + id + '/action', {
+    await ApiClient.fetch('/api/approvals/action', {
       method: 'POST',
-      body: JSON.stringify({ action, remarks }),
+      body: JSON.stringify({ id, action, remarks: remarks || '' }),
     });
   }
 
   async batchProcessAction(ids: string[], action: 'APPROVED' | 'REJECTED', remarks?: string): Promise<void> {
     await ApiClient.fetch('/api/approvals/batch-action', {
       method: 'POST',
-      body: JSON.stringify({ ids, action, remarks }),
+      body: JSON.stringify({ ids, action, remarks: remarks || '' }),
     });
   }
 }

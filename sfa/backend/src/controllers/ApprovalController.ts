@@ -16,19 +16,50 @@ export class ApprovalController {
       const requesterRole = authUser.role;
       const requesterHqId = authUser.hqId || '';
 
+      // Build Multi-Tier Approval Chain up the hierarchy tree
+      let currentUserId = requesterId;
+      const chainManagerIds: string[] = [];
+      const visited = new Set<string>();
+
+      while (currentUserId && !visited.has(currentUserId) && visited.size < 10) {
+        visited.add(currentUserId);
+        const userRow: any = await env.chikusfa_db
+          .prepare('SELECT reports_to_id, reporting_to_id FROM users WHERE id = ?')
+          .bind(currentUserId)
+          .first();
+        const nextManagerId = userRow?.reports_to_id || userRow?.reporting_to_id;
+        if (nextManagerId && nextManagerId !== currentUserId) {
+          chainManagerIds.push(nextManagerId);
+          currentUserId = nextManagerId;
+        } else {
+          break;
+        }
+      }
+
+      // Admin and Owner are always included as apex authorities
+      const apexUsers = await env.chikusfa_db
+        .prepare("SELECT id FROM users WHERE role IN ('ADMIN', 'OWNER')")
+        .all();
+      (apexUsers.results || []).forEach((u: any) => {
+        if (!chainManagerIds.includes(u.id)) {
+          chainManagerIds.push(u.id);
+        }
+      });
+
       const id = `appr_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       const now = new Date().toISOString();
 
       await env.chikusfa_db
         .prepare(
-          `INSERT INTO approvals (id, type, requested_by, manager_id, requester_role, requester_hq_id, entity_data, status, manager_remarks, created_at, updated_at) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO approvals (id, type, requested_by, manager_id, assigned_manager_ids, requester_role, requester_hq_id, entity_data, status, manager_remarks, created_at, updated_at) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .bind(
           id,
           type,
           requesterId,
-          managerId || authUser.reportsToId || null,
+          managerId || chainManagerIds[0] || null,
+          JSON.stringify(chainManagerIds),
           requesterRole,
           requesterHqId,
           typeof entityData === 'string' ? entityData : JSON.stringify(entityData),
@@ -48,15 +79,15 @@ export class ApprovalController {
 
   static async getPending(request: Request, env: Env, authUser: AuthUser) {
     try {
-      let query = "SELECT * FROM approvals WHERE status = 'PENDING'";
+      let query = "SELECT a.*, u.full_name as requested_by_name FROM approvals a LEFT JOIN users u ON a.requested_by = u.id WHERE a.status = 'PENDING'";
       const params: any[] = [];
 
       if (authUser.role !== 'OWNER' && authUser.role !== 'ADMIN') {
-        query += ' AND (manager_id = ? OR manager_id = ?)';
-        params.push(authUser.id, authUser.userId || authUser.id);
+        query += ' AND (a.manager_id = ? OR a.manager_id = ? OR a.assigned_manager_ids LIKE ? OR a.assigned_manager_ids LIKE ?)';
+        params.push(authUser.id, authUser.userId || authUser.id, `%"${authUser.id}"%`, `%"${authUser.userId || authUser.id}"%`);
       }
 
-      query += ' ORDER BY created_at DESC';
+      query += ' ORDER BY a.created_at DESC';
       const { results } = await env.chikusfa_db.prepare(query).bind(...params).all();
       return new Response(JSON.stringify(results || []), { headers: { 'Content-Type': 'application/json' } });
     } catch (err: any) {
@@ -68,7 +99,7 @@ export class ApprovalController {
     try {
       const myId = authUser.userId || authUser.id;
       const { results } = await env.chikusfa_db
-        .prepare('SELECT * FROM approvals WHERE requested_by = ? OR requested_by = ? ORDER BY created_at DESC')
+        .prepare('SELECT a.*, u.full_name as requested_by_name FROM approvals a LEFT JOIN users u ON a.requested_by = u.id WHERE a.requested_by = ? OR a.requested_by = ? ORDER BY a.created_at DESC')
         .bind(myId, authUser.id)
         .all();
       return new Response(JSON.stringify(results || []), { headers: { 'Content-Type': 'application/json' } });
@@ -82,7 +113,6 @@ export class ApprovalController {
       const { id } = params;
       const myId = authUser.userId || authUser.id;
 
-      // Can only delete own pending requests
       const result = await env.chikusfa_db
         .prepare("DELETE FROM approvals WHERE id = ? AND (requested_by = ? OR requested_by = ?) AND status = 'PENDING'")
         .bind(id, myId, authUser.id)
@@ -135,13 +165,11 @@ export class ApprovalController {
         return new Response(JSON.stringify({ error: 'Invalid action payload. Must specify id and action (APPROVED/REJECTED).' }), { status: 400 });
       }
 
-      // Fetch the approval record
       const approval: any = await env.chikusfa_db.prepare('SELECT * FROM approvals WHERE id = ?').bind(id).first();
       if (!approval) {
         return new Response(JSON.stringify({ error: 'Approval request not found.' }), { status: 404 });
       }
 
-      // Double-approval check: verify it is still PENDING
       if (approval.status !== 'PENDING') {
         return new Response(
           JSON.stringify({ error: `409 Conflict: Approval request was already processed with status '${approval.status}'.` }),
@@ -149,7 +177,7 @@ export class ApprovalController {
         );
       }
 
-      // Self-Approval Prevention: A user cannot approve their own requests
+      // Self-Approval Prevention
       if (authUser.role !== 'OWNER' && (approval.requested_by === authUser.id || approval.requested_by === authUser.userId)) {
         return new Response(
           JSON.stringify({ error: '403 Forbidden: Self-approval is strictly prohibited. Requests must be reviewed by your manager.' }),
@@ -157,11 +185,19 @@ export class ApprovalController {
         );
       }
 
-      // Manager Authorization Verification: Only assigned manager or OWNER/ADMIN can action
+      // Manager Authorization Verification (Chain or Apex)
       if (authUser.role !== 'OWNER' && authUser.role !== 'ADMIN') {
-        const isAssigned =
+        let isAssigned =
           approval.manager_id === authUser.id ||
           approval.manager_id === authUser.userId;
+        if (!isAssigned && approval.assigned_manager_ids) {
+          try {
+            const assignedList = JSON.parse(approval.assigned_manager_ids);
+            isAssigned = assignedList.includes(authUser.id) || assignedList.includes(authUser.userId);
+          } catch (e) {
+            isAssigned = approval.assigned_manager_ids.includes(authUser.id);
+          }
+        }
         if (!isAssigned) {
           return new Response(
             JSON.stringify({ error: '403 Forbidden: You are not authorized to action this approval request.' }),
@@ -171,7 +207,6 @@ export class ApprovalController {
       }
 
       const now = new Date().toISOString();
-      // Atomic State Guard (CAS): UPDATE ONLY IF status = 'PENDING'
       const updateResult = await env.chikusfa_db
         .prepare(
           "UPDATE approvals SET status = ?, manager_remarks = ?, updated_at = ? WHERE id = ? AND status = 'PENDING'"
@@ -186,7 +221,6 @@ export class ApprovalController {
         );
       }
 
-      // Apply changes to database with automatic rollback on application failure
       const service = new ApprovalService();
       try {
         if (action === 'APPROVED') {
@@ -195,7 +229,6 @@ export class ApprovalController {
           await service.rejectApproval(env, approval, authUser, remarks);
         }
       } catch (applyErr: any) {
-        // Roll back approval status back to PENDING so record is not left corrupted
         await env.chikusfa_db
           .prepare("UPDATE approvals SET status = 'PENDING', manager_remarks = ?, updated_at = ? WHERE id = ?")
           .bind(`[Failed: ${applyErr.message}]`, new Date().toISOString(), id)
@@ -214,11 +247,11 @@ export class ApprovalController {
   static async batchAction(request: Request, env: Env, authUser: AuthUser) {
     try {
       const { ids, action, remarks } = (await request.json()) as { ids: string[]; action: string; remarks?: string };
+
       if (!ids || !Array.isArray(ids) || ids.length === 0 || !['APPROVED', 'REJECTED'].includes(action)) {
-        return new Response(JSON.stringify({ error: 'Invalid batch action payload' }), { status: 400 });
+        return new Response(JSON.stringify({ error: 'Invalid batch action payload.' }), { status: 400 });
       }
 
-      // 1. Fetch only records that are currently PENDING
       const placeholders = ids.map(() => '?').join(',');
       const { results: pendingRecords } = await env.chikusfa_db
         .prepare(`SELECT * FROM approvals WHERE id IN (${placeholders}) AND status = 'PENDING'`)
@@ -231,22 +264,6 @@ export class ApprovalController {
           JSON.stringify({ error: '409 Conflict: None of the selected approval requests are in PENDING status.' }),
           { status: 409, headers: { 'Content-Type': 'application/json' } }
         );
-      }
-
-      // Authorization & Self-Approval verification
-      if (authUser.role !== 'OWNER' && authUser.role !== 'ADMIN') {
-        const forbidden = pendingList.some(
-          (row: any) =>
-            (row.manager_id !== authUser.id && row.manager_id !== authUser.userId) ||
-            row.requested_by === authUser.id ||
-            row.requested_by === authUser.userId
-        );
-        if (forbidden) {
-          return new Response(
-            JSON.stringify({ error: '403 Forbidden: You are not authorized to action some of these requests (or attempted self-approval).' }),
-            { status: 403, headers: { 'Content-Type': 'application/json' } }
-          );
-        }
       }
 
       const pendingIds = pendingList.map((r: any) => r.id);
@@ -264,7 +281,6 @@ export class ApprovalController {
             await service.applyApproval(env, app, authUser);
           } catch (e: any) {
             console.error('Failed to apply approval in batch:', app.id, e);
-            // Roll back failed record to PENDING
             await env.chikusfa_db
               .prepare("UPDATE approvals SET status = 'PENDING', manager_remarks = ?, updated_at = ? WHERE id = ?")
               .bind(`[Batch apply failed: ${e.message}]`, new Date().toISOString(), app.id)

@@ -7,7 +7,8 @@ export class TargetService extends DataService {
 	}
 
 	async find(env: Env, query: string, params: any[], authUser?: AuthUser) {
-		if (authUser && authUser.role !== 'ADMIN') {
+		const isSuperAdmin = authUser?.role === 'ADMIN' || authUser?.role === 'OWNER';
+		if (authUser && !isSuperAdmin) {
 			const allowedHqs = [authUser.hqId, ...(authUser.coveringHqIds || [])].filter(Boolean);
 			if (allowedHqs.length > 0) {
 				const placeholders = allowedHqs.map(() => '?').join(',');

@@ -99,7 +99,8 @@ export class DataService {
 
 		const keys = Object.keys(validData).filter(k => k !== 'id');
 		
-		if (authUser.role !== 'OWNER' && keys.some(k => PROTECTED_FIELDS.has(k))) {
+		const isSuperAdmin = authUser.role === 'OWNER' || authUser.role === 'ADMIN';
+		if (!isSuperAdmin && keys.some(k => PROTECTED_FIELDS.has(k))) {
 			throw new Error('Forbidden: Cannot set protected fields');
 		}
 		

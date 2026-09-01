@@ -26,12 +26,75 @@ export class CloudflareFieldMasterGateway implements IFieldMasterGateway {
   }
 
   async getDoctors(): Promise<Doctor[]> {
-    return await this.getCollection<Doctor>('doctors');
+    const rows = await ApiClient.fetch<Record<string, any>[]>('/api/data/doctors?limit=500', { method: 'GET' });
+    return (rows || []).map((r) => ({
+      id: String(r.id),
+      doctorCode: r.dr_code || r.doctorCode || '',
+      doctorName: r.name || r.doctorName || '',
+      qualification: r.qualification || '',
+      speciality: r.speciality || 'General',
+      doctorClass: (r.category || r.doctorClass || 'B') as 'A' | 'B' | 'C' | 'VIP',
+      hqId: r.hq_id || r.hqId || '',
+      areaId: r.area_id || r.areaId || '',
+      beatId: r.beat_id || r.beatId || '',
+      mobile: r.mobile || '',
+      email: r.email || '',
+      clinicAddress: r.clinic_address || r.clinicAddress || '',
+      dob: r.dob || '',
+      anniversaryDate: r.anniversary_date || r.anniversaryDate || '',
+      visitFrequency: Number(r.visit_frequency || r.visitFrequency || 1),
+      isActive: r.is_active === 1 || r.is_active === true || r.isActive === true,
+      createdAt: r.created_at || r.createdAt || '',
+    }));
   }
+
   async saveDoctor(doc: Partial<Doctor>): Promise<Doctor> {
-    if (doc.id) return await this.updateItem<Doctor>('doctors', doc.id, doc);
-    return await this.createItem<Doctor>('doctors', doc);
+    const payload: Record<string, unknown> = {
+      name: doc.doctorName || (doc as any).name || '',
+      dr_code: doc.doctorCode || (doc as any).dr_code || undefined,
+      qualification: doc.qualification || '',
+      speciality: doc.speciality || 'General',
+      category: doc.doctorClass || (doc as any).category || 'B',
+      hq_id: doc.hqId || (doc as any).hq_id || '',
+      area_id: doc.areaId || (doc as any).area_id || '',
+      beat_id: doc.beatId || (doc as any).beat_id || null,
+      mobile: doc.mobile || '',
+      email: doc.email || null,
+      clinic_address: doc.clinicAddress || (doc as any).clinic_address || '',
+      dob: doc.dob || null,
+      anniversary_date: doc.anniversaryDate || (doc as any).anniversary_date || null,
+      visit_frequency: Number(doc.visitFrequency || 1),
+      is_active: doc.isActive !== false ? 1 : 0,
+    };
+
+    let res: any;
+    if (doc.id) {
+      res = await this.updateItem<any>('doctors', doc.id, payload);
+    } else {
+      res = await this.createItem<any>('doctors', payload);
+    }
+
+    return {
+      id: String(res?.id || doc.id || ''),
+      doctorCode: res?.dr_code || doc.doctorCode || '',
+      doctorName: res?.name || doc.doctorName || '',
+      qualification: res?.qualification || doc.qualification || '',
+      speciality: res?.speciality || doc.speciality || 'General',
+      doctorClass: (res?.category || doc.doctorClass || 'B') as 'A' | 'B' | 'C' | 'VIP',
+      hqId: res?.hq_id || doc.hqId || '',
+      areaId: res?.area_id || doc.areaId || '',
+      beatId: res?.beat_id || doc.beatId || '',
+      mobile: res?.mobile || doc.mobile || '',
+      email: res?.email || doc.email || '',
+      clinicAddress: res?.clinic_address || doc.clinicAddress || '',
+      dob: res?.dob || doc.dob || '',
+      anniversaryDate: res?.anniversary_date || doc.anniversaryDate || '',
+      visitFrequency: Number(res?.visit_frequency || doc.visitFrequency || 1),
+      isActive: res?.is_active === 1 || doc.isActive !== false,
+      createdAt: res?.created_at || res?.createdAt || new Date().toISOString(),
+    };
   }
+
   async deleteDoctor(id: string): Promise<void> {
     await this.deleteItem('doctors', id);
   }

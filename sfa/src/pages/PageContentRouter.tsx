@@ -92,7 +92,7 @@ export function PageContentRouter({
   if (pageStr === 'geography') return <GeographyMaster />;
   if (pageStr === 'mapping') return <GeographyMapping />;
   if (pageStr === 'leave' || pageStr === 'leave-allocation') return <LeaveAllocation />;
-  if (pageStr === 'da-rates') return <DaRates daRates={hrStore.daRates} />;
+  if (pageStr === 'da-rates') return <DaRates />;
   if (pageStr === 'sfc-master') return <SfcMaster />;
   if (pageStr === 'global-settings' || pageStr === 'financial-year' || pageStr === 'audit-logs' || pageStr === 'data-backup') return <SystemSettings />;
 

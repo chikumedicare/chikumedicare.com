@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { getErrorMessage } from '../../utils/dataIntegrity';
 import type { SfaUser, SfaRole } from '../../core/domain/hr/user.types';
-import type { LeaveAllocation, DaRate, LeaveApplication } from '../../core/domain/hr/leave.types';
+import type { LeaveAllocation, DaRate, LeaveApplication, TaPolicy } from '../../core/domain/hr/leave.types';
 
 interface UseLeaveDaActionsParams {
   leaveGateway: any;
@@ -131,18 +131,19 @@ export function useLeaveDaActions({
 
   const addOrUpdateRoleDaRates = useCallback(
     async (
-      role: SfaRole,
-      rates: { hqRate: number; exHqRate: number; outstationRate: number },
-      effectiveFrom: string,
-      daId?: string
+      role: string,
+      hq: number,
+      exhq: number,
+      outstation: number,
+      transit: number,
+      effectiveFrom: string = '2026-04-01',
+      isActive: boolean = true,
+      existingIds?: { hq?: string; exhq?: string; outstation?: string; transit?: string },
+      taPolicy?: TaPolicy
     ) => {
       try {
         setLoading(true);
-        if (daId) {
-          await daGateway.updateDaRate(daId, { role, ...rates, effectiveFrom });
-        } else {
-          await daGateway.createDaRate({ role, ...rates, effectiveFrom });
-        }
+        await daGateway.saveRoleDaRates(role, hq, exhq, outstation, transit, effectiveFrom, isActive, existingIds, taPolicy);
         await refresh();
         return { success: true };
       } catch (err: unknown) {
@@ -155,10 +156,10 @@ export function useLeaveDaActions({
   );
 
   const deleteRoleDaRates = useCallback(
-    async (id: string) => {
+    async (ids: string[]) => {
       try {
         setLoading(true);
-        await daGateway.deleteDaRate(id);
+        await daGateway.deleteRoleDaRates(ids);
         await refresh();
         return { success: true };
       } catch (err: unknown) {

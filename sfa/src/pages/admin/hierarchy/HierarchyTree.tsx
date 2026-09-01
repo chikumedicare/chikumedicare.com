@@ -6,13 +6,15 @@ import { useHeadOfficeStore } from '../../../store/hr/useHeadOfficeStore';
 
 const roleRank: Record<string, number> = {
   OWNER: 1,
-  ADMIN: 2,
-  VP: 3,
-  NSM: 4,
-  ZSM: 5,
-  RSM: 6,
-  ASM: 7,
-  MR: 8,
+  ADMIN: 1, // Dual Apex: Owner & Admin same rank 1
+  VP: 2,
+  NSM: 3,
+  ZSM: 4,
+  RSM: 5,
+  ASM: 6,
+  SR_ASM: 6,
+  MR: 7,
+  SR_MR: 7,
 };
 
 export function HierarchyTree({
@@ -49,7 +51,7 @@ export function HierarchyTree({
             <span>🌳</span> <span>Organizational Reporting Hierarchy</span>
           </h4>
           <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
-            Simple view of team members, reporting bosses and supervisor assignments.
+            Dual Apex Governance (Admin & Owner) with multi-level field reporting lines.
           </p>
         </div>
 
@@ -107,15 +109,16 @@ export function HierarchyTree({
         {sortedUsers.map((u) => {
           const manager = users.find((m) => m.id === u.reportsToId);
           const subordinatesCount = users.filter((x) => x.reportsToId === u.id).length;
+          const isApex = u.role === 'OWNER' || u.role === 'ADMIN';
 
           return (
             <div
               key={u.id}
               style={{
-                background: '#f8fafc',
+                background: isApex ? '#fffbeb' : '#f8fafc',
                 padding: '16px 20px',
                 borderRadius: '12px',
-                border: '1px solid #e2e8f0',
+                border: `1px solid ${isApex ? '#fde68a' : '#e2e8f0'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -149,7 +152,7 @@ export function HierarchyTree({
                     <Badge v={u.role} />
                   </div>
                   <div style={{ fontSize: '12px', color: '#64748b', marginTop: '3px' }}>
-                    Emp Code / User ID: <b style={{ color: '#0284c7' }}>{u.empCode || u.userId}</b> | HQ: <b>{getHqName(u.hqId)}</b>
+                    Emp Code / User ID: <b style={{ color: '#0284c7' }}>{u.empCode || u.userId}</b> | HQ: <b>{getHqName(u.hqId) || 'Head Office'}</b>
                   </div>
                 </div>
               </div>
@@ -164,10 +167,15 @@ export function HierarchyTree({
                     <span>👨‍💼</span>
                     <span>{manager.fullName} ({manager.role})</span>
                   </div>
-                ) : (
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#94a3b8', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                ) : isApex ? (
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#b45309', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span>👑</span>
-                    <span>Top Level Authority</span>
+                    <span>Dual Apex Governance</span>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#b45309', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>👑</span>
+                    <span>Default: Apex (Owner & Admin)</span>
                   </div>
                 )}
               </div>
@@ -183,7 +191,7 @@ export function HierarchyTree({
                 >
                   🔍 Chain ({subordinatesCount})
                 </button>
-                {u.role !== 'OWNER' && (
+                {!isApex && (
                   <button
                     type="button"
                     className="primary"
@@ -191,7 +199,7 @@ export function HierarchyTree({
                     style={{ padding: '8px 16px', fontSize: '12px', fontWeight: 700, borderRadius: '8px', background: '#0284c7', borderColor: '#0284c7' }}
                     title="Assign or Change Reporting Supervisor"
                   >
-                    ✏️ Assign Manager
+                    ✏️ Assign Boss
                   </button>
                 )}
               </div>

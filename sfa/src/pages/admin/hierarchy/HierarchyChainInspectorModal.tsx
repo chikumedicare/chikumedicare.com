@@ -19,6 +19,11 @@ export function HierarchyChainInspectorModal({
 
   const upwardChain = getUpwardChain(user, allUsers);
   const directSubordinates = allUsers.filter((u) => u.reportsToId === user.id && u.id !== user.id);
+  const isApexUser = user.role === 'OWNER' || user.role === 'ADMIN';
+
+  // Apex Governance Leads
+  const ownerUser = allUsers.find((u) => u.role === 'OWNER');
+  const adminUser = allUsers.find((u) => u.role === 'ADMIN');
 
   return (
     <div
@@ -53,7 +58,7 @@ export function HierarchyChainInspectorModal({
               👁️ Hierarchy Chain Inspector
             </h3>
             <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
-              Multi-Level Approval Line & Subordinate Team for <b>{user.fullName}</b>
+              Multi-Level Escalation Line & Subordinate Team for <b>{user.fullName}</b>
             </p>
           </div>
           <button type="button" className="secondary" onClick={onClose} style={{ padding: '4px 10px', fontSize: '12px' }}>
@@ -63,8 +68,8 @@ export function HierarchyChainInspectorModal({
 
         {/* User Card */}
         <div style={{ marginTop: '16px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px' }}>
-            {user.fullName.split(' ').map((x) => x[0]).join('').slice(0, 2).toUpperCase()}
+          <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: isApexUser ? '#f59e0b' : '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '16px' }}>
+            {isApexUser ? '👑' : user.fullName.split(' ').map((x) => x[0]).join('').slice(0, 2).toUpperCase()}
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -72,10 +77,10 @@ export function HierarchyChainInspectorModal({
               <Badge v={user.role} />
             </div>
             <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
-              Code: <code>{user.empCode || user.userId}</code> • HQ: <b>{getHqName(user.hqId)}</b>
+              Code: <code>{user.empCode || user.userId}</code> • HQ: <b>{getHqName(user.hqId) || 'Head Office'}</b>
             </div>
           </div>
-          {user.role !== 'OWNER' && (
+          {!isApexUser && (
             <button
               type="button"
               className="primary"
@@ -93,9 +98,10 @@ export function HierarchyChainInspectorModal({
         {/* 1. Upward Approval Chain */}
         <div style={{ marginTop: '20px' }}>
           <b style={{ fontSize: '14px', color: '#0f172a', display: 'block', marginBottom: '10px' }}>
-            ⬆️ Upward Escalation & Approval Chain ({upwardChain.length + 1} Levels):
+            ⬆️ Upward Escalation & Reporting Chain:
           </b>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* Level 1: Target User */}
             <div style={{ padding: '10px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <b>1. {user.fullName}</b> <small>({user.role} - Target User)</small>
@@ -103,6 +109,7 @@ export function HierarchyChainInspectorModal({
               <span style={{ fontSize: '11px', background: '#dbeafe', color: '#1e40af', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>Level 1 Target</span>
             </div>
 
+            {/* Intermediary Assigned Managers */}
             {upwardChain.map((mgr, idx) => (
               <div key={mgr.id} style={{ padding: '10px 14px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
@@ -112,11 +119,15 @@ export function HierarchyChainInspectorModal({
               </div>
             ))}
 
-            <div style={{ padding: '10px 14px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* Apex Level 1 Authority: Owner & Admin */}
+            <div style={{ padding: '12px 14px', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '13px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <b>👑 Head Office & Master Executive Board</b>
+                <b style={{ color: '#92400e' }}>👑 Top Apex Governance Board:</b>
+                <div style={{ fontSize: '12px', color: '#78350f', marginTop: '2px' }}>
+                  {ownerUser ? `👑 ${ownerUser.fullName} (${ownerUser.userId})` : '👑 Company Owner'} & {adminUser ? `🛡️ ${adminUser.fullName} (${adminUser.userId})` : '🛡️ System Admin'}
+                </div>
               </div>
-              <span style={{ fontSize: '11px', background: '#fef3c7', color: '#b45309', padding: '2px 6px', borderRadius: '4px', fontWeight: 700 }}>Top Authority</span>
+              <span style={{ fontSize: '11px', background: '#f59e0b', color: '#ffffff', padding: '3px 8px', borderRadius: '12px', fontWeight: 700 }}>Dual Apex Authority</span>
             </div>
           </div>
         </div>

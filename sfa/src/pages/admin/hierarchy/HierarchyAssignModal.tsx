@@ -1,4 +1,3 @@
-import { getErrorMessage } from '../../../utils/dataIntegrity';
 import React, { useState } from 'react';
 import { Section } from '../../../components/Section';
 import { SelectField } from '../../../components/FormFields';
@@ -15,7 +14,7 @@ export const ROLE_HIERARCHY_LEVELS: Record<SfaRole, number> = {
   NSM: 7,
   VP: 8,
   ADMIN: 9,
-  OWNER: 10,
+  OWNER: 9, // Admin & Owner share top Apex Level 9
 };
 
 export function getAllSubordinateIds(userId: string, allUsers: SfaUser[]): Set<string> {
@@ -108,7 +107,7 @@ export function HierarchyAssignModal({
         style={{
           background: '#fff',
           borderRadius: '16px',
-          maxWidth: '540px',
+          maxWidth: '560px',
           width: '100%',
           padding: '24px',
           boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
@@ -135,7 +134,7 @@ export function HierarchyAssignModal({
               value={reportsToId}
               onChange={setReportsToId}
               options={[
-                { v: '', l: '👑 Direct to Head Office (Admin / Owner)' },
+                { v: '', l: '👑 Default: Apex Governance (Owner & Admin)' },
                 ...eligibleManagers.map((m) => {
                   const mDiv = m.divisionId || '';
                   const sameDivTag = mDiv === userDivision ? ' [Same Division]' : '';
@@ -146,29 +145,23 @@ export function HierarchyAssignModal({
                 }),
               ]}
             />
-            {eligibleManagers.length === 0 && (
-              <small style={{ color: '#f59e0b', display: 'block', marginTop: '6px', fontWeight: 600 }}>
-                ⚠️ No senior level field managers found. User reports directly to Head Office (Admin/Owner).
-              </small>
-            )}
 
-            {selectedManager && (
-              <div
-                style={{
-                  marginTop: '14px',
-                  padding: '12px',
-                  background: '#f0fdf4',
-                  border: '1px solid #bbf7d0',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                }}
-              >
-                <b style={{ color: '#166534' }}>Escalation Reporting Chain Preview:</b>
-                <div style={{ marginTop: '4px', color: '#15803d', fontWeight: 600 }}>
-                  {user.fullName} ({user.role}) ➔ <b>{selectedManager.fullName} ({selectedManager.role})</b> ➔ Head Office
-                </div>
+            <div
+              style={{
+                marginTop: '14px',
+                padding: '12px',
+                background: selectedManager ? '#f0fdf4' : '#fffbeb',
+                border: `1px solid ${selectedManager ? '#bbf7d0' : '#fde68a'}`,
+                borderRadius: '8px',
+                fontSize: '13px',
+              }}
+            >
+              <b style={{ color: selectedManager ? '#166534' : '#92400e' }}>Escalation Reporting Line Preview:</b>
+              <div style={{ marginTop: '4px', color: selectedManager ? '#15803d' : '#b45309', fontWeight: 600 }}>
+                {user.fullName} ({user.role}) ➔ {selectedManager ? <b>{selectedManager.fullName} ({selectedManager.role}) ➔ </b> : ''}
+                <b>👑 Apex Governance (Owner & Admin)</b>
               </div>
-            )}
+            </div>
 
             {error && (
               <div style={{ color: '#ef4444', fontSize: '13px', marginTop: '10px', fontWeight: 600 }}>

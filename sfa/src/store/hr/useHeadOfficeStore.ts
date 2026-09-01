@@ -93,6 +93,7 @@ export function useHeadOfficeStore() {
     loading,
     error,
     fetchHeadOfficeData,
+    refresh: fetchHeadOfficeData,
     saveDivision,
     deleteDivision,
     saveProfile,

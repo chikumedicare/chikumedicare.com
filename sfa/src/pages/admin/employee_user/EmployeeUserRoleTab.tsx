@@ -63,55 +63,48 @@ export function EmployeeUserRoleTab({
 
   // Filter HQs by selected State and Division
   const availableHqs = hqs.filter((h) => {
-    if (selectedStateId && h.stateId !== selectedStateId) return false;
+    if (selectedStateId && h.stateId && h.stateId !== selectedStateId) return false;
     if (draft.divisionId && h.divisionId && h.divisionId !== draft.divisionId) return false;
     return true;
   });
 
   const hqOptions = [
-    { v: '', l: selectedStateId ? '-- Select Field Territory / HQ --' : '-- Select State First --' },
+    { v: '', l: selectedStateId ? '-- Select Field Territory / HQ --' : (hqs.length > 0 ? '-- All Field HQs --' : '-- No HQs Found (Create in Master) --') },
     ...availableHqs.map((h) => ({
       v: h.id,
       l: `📍 ${h.name} (${h.code || 'HQ'})`,
     })),
   ];
 
-  // Smart Hierarchy-Based Manager Filtering
+  // Smart Hierarchy-Based Manager Filtering (Always includes Owner & Admin as Apex)
   const getFilteredManagers = (): { v: string; l: string }[] => {
     let candidateRoles: SfaRole[] = [];
 
     if (draft.role === 'MR' || draft.role === 'SR_MR') {
-      candidateRoles = ['ASM', 'SR_ASM', 'RSM'];
+      candidateRoles = ['ASM', 'SR_ASM', 'RSM', 'ZSM', 'NSM', 'VP', 'ADMIN', 'OWNER'];
     } else if (draft.role === 'ASM' || draft.role === 'SR_ASM') {
-      candidateRoles = ['RSM', 'ZSM'];
+      candidateRoles = ['RSM', 'ZSM', 'NSM', 'VP', 'ADMIN', 'OWNER'];
     } else if (draft.role === 'RSM') {
-      candidateRoles = ['ZSM', 'NSM', 'VP'];
+      candidateRoles = ['ZSM', 'NSM', 'VP', 'ADMIN', 'OWNER'];
     } else if (draft.role === 'ZSM') {
-      candidateRoles = ['NSM', 'VP', 'OWNER'];
+      candidateRoles = ['NSM', 'VP', 'ADMIN', 'OWNER'];
     } else if (draft.role === 'NSM') {
-      candidateRoles = ['VP', 'OWNER'];
+      candidateRoles = ['VP', 'ADMIN', 'OWNER'];
     } else if (draft.role === 'VP') {
-      candidateRoles = ['OWNER'];
+      candidateRoles = ['ADMIN', 'OWNER'];
     }
 
     const filtered = allUsers.filter((u) => {
       if (u.userId === draft.userId || !u.isActive) return false;
       if (candidateRoles.length > 0 && !candidateRoles.includes(u.role)) return false;
-      // Prefer same division if available
-      if (draft.divisionId && u.divisionId && u.divisionId !== draft.divisionId) return false;
       return true;
     });
 
-    // Fallback if none in same division: show candidates across divisions
-    const finalCandidates = filtered.length > 0
-      ? filtered
-      : allUsers.filter((u) => u.userId !== draft.userId && u.isActive && (candidateRoles.length === 0 || candidateRoles.includes(u.role)));
-
     return [
-      { v: '', l: '-- Direct to Head Office / Apex --' },
-      ...finalCandidates.map((u) => ({
+      { v: '', l: '👑 Default: Direct to Apex (Owner & Admin)' },
+      ...filtered.map((u) => ({
         v: u.id,
-        l: `${u.fullName} (${u.role} - ${u.userId})`,
+        l: `${u.fullName} (${u.role} - ${u.empCode || u.userId})`,
       })),
     ];
   };
@@ -134,7 +127,7 @@ export function EmployeeUserRoleTab({
             const clean = v.trim().toUpperCase();
             setDraft((prev) => ({ ...prev, userId: clean, empCode: clean }));
           }}
-          placeholder="e.g. CK001"
+          placeholder="e.g. CHIKU0001"
           disabled={true}
         />
 
@@ -231,7 +224,7 @@ export function EmployeeUserRoleTab({
       <div style={{ display: 'grid', gridTemplateColumns: isCorporateRole ? '1fr' : '1fr 1fr', gap: '12px' }}>
         {!isCorporateRole && (
           <SelectField
-            label={`Reporting Manager (${draft.role === 'MR' ? 'ASM' : draft.role === 'ASM' ? 'RSM' : 'Senior Lead'})`}
+            label={`Reporting Manager (${draft.role === 'MR' ? 'ASM / Lead' : draft.role === 'ASM' ? 'RSM / Lead' : 'Senior Lead'})`}
             value={draft.reportsToId || ''}
             onChange={(v) => setDraft((prev) => ({ ...prev, reportsToId: v }))}
             options={managerOptions}

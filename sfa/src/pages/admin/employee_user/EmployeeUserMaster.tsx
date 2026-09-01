@@ -18,8 +18,14 @@ export function EmployeeUserMaster() {
     deleteRecord,
   } = useEmployeeUserActions();
 
-  const { divisions } = useHeadOfficeStore();
-  const { hqs, states } = useGeographyStore();
+  const { divisions, refresh: refreshHo } = useHeadOfficeStore();
+  const { hqs, states, refresh: refreshGeo } = useGeographyStore();
+
+  // Auto-refresh HO and Geography on mount to ensure fresh dropdown data
+  React.useEffect(() => {
+    refreshHo(true);
+    refreshGeo(true);
+  }, [refreshHo, refreshGeo]);
 
   // Search & Filter States
   const [q, setQ] = useState('');

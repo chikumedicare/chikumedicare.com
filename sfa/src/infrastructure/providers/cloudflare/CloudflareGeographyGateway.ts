@@ -10,6 +10,7 @@ export class CloudflareGeographyGateway implements IGeographyGateway {
       name: String(r.name || r.zone_name || ''),
       code: String(r.code || r.zone_code || ''),
       divisionId: String(r.division_id || r.divisionId || ''),
+      description: r.description || '',
       isActive: r.is_active === 1 || r.is_active === true,
     }));
   }
@@ -22,6 +23,8 @@ export class CloudflareGeographyGateway implements IGeographyGateway {
       code: String(r.code || r.state_code || ''),
       zoneId: String(r.zone_id || r.zoneId || ''),
       divisionId: String(r.division_id || r.divisionId || ''),
+      description: r.description || '',
+      displayOrder: r.display_order || 0,
       isActive: r.is_active === 1 || r.is_active === true,
     }));
   }
@@ -34,6 +37,16 @@ export class CloudflareGeographyGateway implements IGeographyGateway {
       code: String(r.code || r.hq_code || ''),
       stateId: String(r.state_id || r.stateId || ''),
       divisionId: String(r.division_id || r.divisionId || ''),
+      hqType: r.hq_type || 'HQ',
+      city: r.city || '',
+      district: r.district || '',
+      pinCode: r.pin_code || r.pincode || '',
+      isPoolHq: r.is_pool_hq === 1 || r.is_pool_hq === true,
+      parentPoolHqId: r.parent_pool_hq_id || '',
+      latitude: r.latitude,
+      longitude: r.longitude,
+      displayOrder: r.display_order || 0,
+      description: r.description || '',
       isActive: r.is_active === 1 || r.is_active === true,
     }));
   }
@@ -50,6 +63,11 @@ export class CloudflareGeographyGateway implements IGeographyGateway {
       code: String(r.code || r.area_code || ''),
       hqId: String(r.hq_id || r.hqId || ''),
       divisionId: String(r.division_id || r.divisionId || ''),
+      territoryType: r.territory_type || 'LOCAL',
+      travelMode: r.travel_mode || 'TWO_SIDE',
+      bothSideAllowed: r.both_side_allowed === 1 || r.both_side_allowed === true,
+      displayOrder: r.display_order || 0,
+      description: r.description || '',
       isActive: r.is_active === 1 || r.is_active === true,
     }));
   }
@@ -63,51 +81,170 @@ export class CloudflareGeographyGateway implements IGeographyGateway {
       areaId: String(r.area_id || r.areaId || ''),
       hqId: String(r.hq_id || r.hqId || ''),
       divisionId: String(r.division_id || r.divisionId || ''),
+      beatType: r.beat_type || 'CORE',
+      displayOrder: r.display_order || 0,
+      description: r.description || '',
       isActive: r.is_active === 1 || r.is_active === true,
     }));
   }
 
   async createZone(payload: Partial<Zone>): Promise<Zone> {
-    return await ApiClient.fetch<Zone>('/api/data/zones', { method: 'POST', body: JSON.stringify(payload) });
+    const body: Record<string, any> = {
+      name: payload.name,
+      division_id: payload.divisionId || undefined,
+      description: payload.description || undefined,
+      is_active: payload.isActive === false ? 0 : 1,
+    };
+    if (payload.code) body.zone_code = payload.code;
+    return await ApiClient.fetch<Zone>('/api/data/zones', { method: 'POST', body: JSON.stringify(body) });
   }
+
   async updateZone(id: string, payload: Partial<Zone>): Promise<Zone> {
-    return await ApiClient.fetch<Zone>('/api/data/zones/' + id, { method: 'PUT', body: JSON.stringify(payload) });
+    const body: Record<string, any> = {
+      name: payload.name,
+      division_id: payload.divisionId || undefined,
+      description: payload.description || undefined,
+      is_active: payload.isActive === false ? 0 : 1,
+    };
+    if (payload.code) body.zone_code = payload.code;
+    return await ApiClient.fetch<Zone>('/api/data/zones/' + id, { method: 'PUT', body: JSON.stringify(body) });
   }
 
   async createState(payload: Partial<State>): Promise<State> {
-    return await ApiClient.fetch<State>('/api/data/states', { method: 'POST', body: JSON.stringify(payload) });
+    const body: Record<string, any> = {
+      state_name: payload.name,
+      zone_id: payload.zoneId,
+      division_id: payload.divisionId || undefined,
+      description: payload.description || undefined,
+      display_order: payload.displayOrder || 0,
+      is_active: payload.isActive === false ? 0 : 1,
+    };
+    if (payload.code) body.state_code = payload.code;
+    return await ApiClient.fetch<State>('/api/data/states', { method: 'POST', body: JSON.stringify(body) });
   }
+
   async updateState(id: string, payload: Partial<State>): Promise<State> {
-    return await ApiClient.fetch<State>('/api/data/states/' + id, { method: 'PUT', body: JSON.stringify(payload) });
+    const body: Record<string, any> = {
+      state_name: payload.name,
+      zone_id: payload.zoneId,
+      division_id: payload.divisionId || undefined,
+      description: payload.description || undefined,
+      display_order: payload.displayOrder || 0,
+      is_active: payload.isActive === false ? 0 : 1,
+    };
+    if (payload.code) body.state_code = payload.code;
+    return await ApiClient.fetch<State>('/api/data/states/' + id, { method: 'PUT', body: JSON.stringify(body) });
   }
 
   async createHq(payload: Partial<Headquarter>): Promise<Headquarter> {
-    return await ApiClient.fetch<Headquarter>('/api/data/hqs', { method: 'POST', body: JSON.stringify(payload) });
+    const body: Record<string, any> = {
+      hq_name: payload.name,
+      state_id: payload.stateId,
+      division_id: payload.divisionId || undefined,
+      hq_type: payload.hqType || 'HQ',
+      city: payload.city || undefined,
+      district: payload.district || undefined,
+      pin_code: payload.pinCode || undefined,
+      is_pool_hq: payload.isPoolHq ? 1 : 0,
+      parent_pool_hq_id: payload.parentPoolHqId || undefined,
+      latitude: payload.latitude || undefined,
+      longitude: payload.longitude || undefined,
+      display_order: payload.displayOrder || 0,
+      description: payload.description || undefined,
+      is_active: payload.isActive === false ? 0 : 1,
+    };
+    if (payload.code) body.hq_code = payload.code;
+    return await ApiClient.fetch<Headquarter>('/api/data/hqs', { method: 'POST', body: JSON.stringify(body) });
   }
+
   async updateHq(id: string, payload: Partial<Headquarter>): Promise<Headquarter> {
-    return await ApiClient.fetch<Headquarter>('/api/data/hqs/' + id, { method: 'PUT', body: JSON.stringify(payload) });
+    const body: Record<string, any> = {
+      hq_name: payload.name,
+      state_id: payload.stateId,
+      division_id: payload.divisionId || undefined,
+      hq_type: payload.hqType || 'HQ',
+      city: payload.city || undefined,
+      district: payload.district || undefined,
+      pin_code: payload.pinCode || undefined,
+      is_pool_hq: payload.isPoolHq ? 1 : 0,
+      parent_pool_hq_id: payload.parentPoolHqId || undefined,
+      latitude: payload.latitude || undefined,
+      longitude: payload.longitude || undefined,
+      display_order: payload.displayOrder || 0,
+      description: payload.description || undefined,
+      is_active: payload.isActive === false ? 0 : 1,
+    };
+    if (payload.code) body.hq_code = payload.code;
+    return await ApiClient.fetch<Headquarter>('/api/data/hqs/' + id, { method: 'PUT', body: JSON.stringify(body) });
   }
 
   async createArea(payload: Partial<Area>): Promise<Area> {
-    return await ApiClient.fetch<Area>('/api/data/areas', { method: 'POST', body: JSON.stringify(payload) });
+    const body: Record<string, any> = {
+      area_name: payload.name,
+      hq_id: payload.hqId,
+      division_id: payload.divisionId || undefined,
+      territory_type: payload.territoryType || 'LOCAL',
+      travel_mode: payload.travelMode || 'TWO_SIDE',
+      both_side_allowed: payload.bothSideAllowed === false ? 0 : 1,
+      display_order: payload.displayOrder || 0,
+      description: payload.description || undefined,
+      is_active: payload.isActive === false ? 0 : 1,
+    };
+    if (payload.code) body.area_code = payload.code;
+    return await ApiClient.fetch<Area>('/api/data/areas', { method: 'POST', body: JSON.stringify(body) });
   }
+
   async updateArea(id: string, payload: Partial<Area>): Promise<Area> {
-    return await ApiClient.fetch<Area>('/api/data/areas/' + id, { method: 'PUT', body: JSON.stringify(payload) });
+    const body: Record<string, any> = {
+      area_name: payload.name,
+      hq_id: payload.hqId,
+      division_id: payload.divisionId || undefined,
+      territory_type: payload.territoryType || 'LOCAL',
+      travel_mode: payload.travelMode || 'TWO_SIDE',
+      both_side_allowed: payload.bothSideAllowed === false ? 0 : 1,
+      display_order: payload.displayOrder || 0,
+      description: payload.description || undefined,
+      is_active: payload.isActive === false ? 0 : 1,
+    };
+    if (payload.code) body.area_code = payload.code;
+    return await ApiClient.fetch<Area>('/api/data/areas/' + id, { method: 'PUT', body: JSON.stringify(body) });
   }
 
   async createBeat(payload: Partial<Beat>): Promise<Beat> {
-    return await ApiClient.fetch<Beat>('/api/data/beats', { method: 'POST', body: JSON.stringify(payload) });
+    const body: Record<string, any> = {
+      beat_name: payload.name,
+      area_id: payload.areaId,
+      division_id: payload.divisionId || undefined,
+      beat_type: payload.beatType || 'CORE',
+      display_order: payload.displayOrder || 0,
+      description: payload.description || undefined,
+      is_active: payload.isActive === false ? 0 : 1,
+    };
+    if (payload.code) body.beat_code = payload.code;
+    return await ApiClient.fetch<Beat>('/api/data/beats', { method: 'POST', body: JSON.stringify(body) });
   }
+
   async updateBeat(id: string, payload: Partial<Beat>): Promise<Beat> {
-    return await ApiClient.fetch<Beat>('/api/data/beats/' + id, { method: 'PUT', body: JSON.stringify(payload) });
+    const body: Record<string, any> = {
+      beat_name: payload.name,
+      area_id: payload.areaId,
+      division_id: payload.divisionId || undefined,
+      beat_type: payload.beatType || 'CORE',
+      display_order: payload.displayOrder || 0,
+      description: payload.description || undefined,
+      is_active: payload.isActive === false ? 0 : 1,
+    };
+    if (payload.code) body.beat_code = payload.code;
+    return await ApiClient.fetch<Beat>('/api/data/beats/' + id, { method: 'PUT', body: JSON.stringify(body) });
   }
 
   async saveTerritory(type: string, data: any): Promise<any> {
-    const table = type === 'HQ' ? 'hqs' : type.toLowerCase() + 's';
-    if (data.id) {
-      return await ApiClient.fetch('/api/data/' + table + '/' + data.id, { method: 'PUT', body: JSON.stringify(data) });
-    }
-    return await ApiClient.fetch('/api/data/' + table, { method: 'POST', body: JSON.stringify(data) });
+    if (type === 'Zone') return data.id ? this.updateZone(data.id, data) : this.createZone(data);
+    if (type === 'State') return data.id ? this.updateState(data.id, data) : this.createState(data);
+    if (type === 'HQ') return data.id ? this.updateHq(data.id, data) : this.createHq(data);
+    if (type === 'Area') return data.id ? this.updateArea(data.id, data) : this.createArea(data);
+    if (type === 'Beat') return data.id ? this.updateBeat(data.id, data) : this.createBeat(data);
+    return null;
   }
 
   async deleteTerritory(type: string, id: string): Promise<void> {

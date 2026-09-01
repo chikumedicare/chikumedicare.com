@@ -6,7 +6,6 @@ interface LeaveAllocationHeaderProps {
   avgDays: number;
   pendingAppsCount: number;
   isReadOnly: boolean;
-  onOpenBulk: () => void;
   onOpenAdd: () => void;
 }
 
@@ -16,7 +15,6 @@ export function LeaveAllocationHeader({
   avgDays,
   pendingAppsCount,
   isReadOnly,
-  onOpenBulk,
   onOpenAdd,
 }: LeaveAllocationHeaderProps) {
   return (
@@ -52,51 +50,29 @@ export function LeaveAllocationHeader({
         </div>
       </div>
 
-      {/* Header Action Buttons */}
+      {/* Header Action Button */}
       {!isReadOnly && (
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            type="button"
-            onClick={onOpenBulk}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '8px',
-              border: '1px solid #cbd5e1',
-              background: '#ffffff',
-              fontSize: '12.5px',
-              fontWeight: 700,
-              color: '#334155',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-            }}
-          >
-            <span>⚡</span>
-            <span>Bulk Allocation</span>
-          </button>
-          <button
-            type="button"
-            onClick={onOpenAdd}
-            style={{
-              padding: '6px 14px',
-              borderRadius: '8px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-              fontSize: '12.5px',
-              fontWeight: 700,
-              color: '#ffffff',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)',
-            }}
-          >
-            <span>+</span>
-            <span>Add Allocation</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onOpenAdd}
+          style={{
+            padding: '6px 14px',
+            borderRadius: '8px',
+            border: 'none',
+            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            fontSize: '12.5px',
+            fontWeight: 700,
+            color: '#ffffff',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)',
+          }}
+        >
+          <span>+</span>
+          <span>Add Allocation</span>
+        </button>
       )}
     </div>
   );

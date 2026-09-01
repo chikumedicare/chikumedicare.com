@@ -6,28 +6,18 @@ import { LeaveAllocationHeader } from './LeaveAllocationHeader';
 import { LeaveAllocationToolbar } from './LeaveAllocationToolbar';
 import { LeaveBalancesTable } from './LeaveBalancesTable';
 import { LeaveFormModal } from './LeaveFormModal';
-import { BulkLeaveModal } from './BulkLeaveModal';
 import { LeaveApplicationsTable } from './LeaveApplicationsTable';
 
 interface LeaveAllocationProps {
   users?: SfaUser[];
   onSaveAllocation?: (draft: Partial<LeaveType>) => Promise<{ success: boolean; error?: string }>;
   onDeleteAllocation?: (id: string) => Promise<{ success: boolean; error?: string }>;
-  onBulkAllocate?: (
-    year: string,
-    cl: number,
-    sl: number,
-    pl: number,
-    role?: string,
-    overwrite?: boolean
-  ) => Promise<{ success: boolean; error?: string; count?: number }>;
 }
 
 export function LeaveAllocation({
   users: propUsers,
   onSaveAllocation: propSave,
   onDeleteAllocation: propDelete,
-  onBulkAllocate: propBulk,
 }: LeaveAllocationProps) {
   const {
     leaves,
@@ -35,7 +25,6 @@ export function LeaveAllocation({
     employees,
     addOrUpdateLeaveAllocation,
     deleteLeaveAllocation,
-    bulkAllocateLeaves,
     fetchLeaveApplications,
     updateLeaveApplicationStatus,
     refresh,
@@ -50,7 +39,6 @@ export function LeaveAllocation({
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAllocation, setEditingAllocation] = useState<LeaveType | null>(null);
-  const [showBulkModal, setShowBulkModal] = useState(false);
 
   const [applications, setApplications] = useState<LeaveApplication[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
@@ -128,24 +116,6 @@ export function LeaveAllocation({
     await refresh(true);
   };
 
-  const handleBulk = async (
-    year: string,
-    cl: number,
-    sl: number,
-    pl: number,
-    role?: string
-  ) => {
-    const targetUsers = fieldUsers.filter((u) => !role || role === 'ALL' || u.role === role);
-    if (propBulk) {
-      return await propBulk(year, cl, sl, pl, role);
-    }
-    const res = await bulkAllocateLeaves(targetUsers, cl, sl, pl, year);
-    if (res.success) {
-      await refresh(true);
-    }
-    return res;
-  };
-
   const handleApprove = async (id: string) => {
     await updateLeaveApplicationStatus(id, 'APPROVED');
     const apps = await fetchLeaveApplications();
@@ -168,7 +138,6 @@ export function LeaveAllocation({
         avgDays={avgDays}
         pendingAppsCount={pendingAppsCount}
         isReadOnly={isReadOnly}
-        onOpenBulk={() => setShowBulkModal(true)}
         onOpenAdd={() => setShowAddModal(true)}
       />
 
@@ -219,15 +188,6 @@ export function LeaveAllocation({
             setShowAddModal(false);
             setEditingAllocation(null);
           }}
-        />
-      )}
-
-      {showBulkModal && (
-        <BulkLeaveModal
-          users={fieldUsers}
-          currentFY={selectedFY}
-          onBulkAllocate={handleBulk}
-          onClose={() => setShowBulkModal(false)}
         />
       )}
     </div>

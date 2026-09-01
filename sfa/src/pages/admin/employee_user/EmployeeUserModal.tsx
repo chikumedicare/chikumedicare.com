@@ -68,7 +68,8 @@ export function EmployeeUserModal({
     if (!draft.firstName.trim()) return 'First Name is required';
     if (!draft.lastName.trim()) return 'Last Name is required';
     if (!draft.mobile.trim() || draft.mobile.trim().length !== 10) return 'Valid 10-digit primary mobile number is required';
-    if (!isEditing && (!draft.password || draft.password.length < 6)) {
+    const effectivePassword = draft.password?.trim() || draft.userId.trim().toLowerCase();
+    if (!isEditing && (!effectivePassword || effectivePassword.length < 6)) {
       return 'Initial login password must be at least 6 characters';
     }
     return null;
@@ -85,7 +86,11 @@ export function EmployeeUserModal({
     setSaving(true);
     setError('');
     try {
-      const res = await onSave(draft);
+      const finalDraft: EmployeeUserDraft = {
+        ...draft,
+        password: (draft.password || draft.userId).trim().toLowerCase(),
+      };
+      const res = await onSave(finalDraft);
       if (res.success) {
         onClose();
       } else if (res.error) {

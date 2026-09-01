@@ -146,7 +146,7 @@ export function useEmployeeUserActions() {
             empCode: draft.userId.trim().toUpperCase(),
             fullName: `${draft.firstName} ${draft.lastName}`.trim(),
             role: draft.role,
-            password: draft.password,
+            password: (draft.password || draft.userId).trim().toLowerCase(),
             mobile: draft.mobile,
             email: draft.email,
             divisionId: draft.divisionId || undefined,

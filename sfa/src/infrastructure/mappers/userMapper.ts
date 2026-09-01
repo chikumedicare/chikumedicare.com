@@ -29,7 +29,7 @@ export function mapUserFromDb(row: Record<string, unknown>): SfaUser {
   };
 }
 
-export function mapUserToDb(user: Partial<SfaUser>): Record<string, unknown> {
+export function mapUserToDb(user: Partial<SfaUser> & { password?: string; password_hash?: string }): Record<string, unknown> {
   const payload: Record<string, unknown> = {};
   if (user.userId !== undefined) payload.user_id = user.userId;
   if (user.empCode !== undefined) payload.emp_code = user.empCode;
@@ -45,5 +45,11 @@ export function mapUserToDb(user: Partial<SfaUser>): Record<string, unknown> {
   if (user.isActive !== undefined) payload.is_active = user.isActive ? 1 : 0;
   if (user.coveringHqIds !== undefined) payload.covering_hq_ids = JSON.stringify(user.coveringHqIds);
   if (user.areaIds !== undefined) payload.area_ids = JSON.stringify(user.areaIds);
+  if (user.password !== undefined && user.password.trim().length > 0) {
+    payload.password_hash = user.password.trim();
+  }
+  if (user.password_hash !== undefined && user.password_hash.trim().length > 0) {
+    payload.password_hash = user.password_hash.trim();
+  }
   return payload;
 }

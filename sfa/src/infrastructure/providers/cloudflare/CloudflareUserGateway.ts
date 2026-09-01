@@ -34,7 +34,10 @@ export class CloudflareUserGateway implements IUserGateway {
     divisionId?: string;
     joiningDate?: string;
   }): Promise<SfaUser> {
-    const dbPayload = mapUserToDb(payload as Partial<SfaUser>);
+    const dbPayload = mapUserToDb(payload as any);
+    if (!dbPayload.password_hash) {
+      dbPayload.password_hash = (payload.password || payload.userId).trim().toLowerCase();
+    }
     const res = await ApiClient.fetch<Record<string, unknown>>('/api/data/users', {
       method: 'POST',
       body: JSON.stringify(dbPayload),

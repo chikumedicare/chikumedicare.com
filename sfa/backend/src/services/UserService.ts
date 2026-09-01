@@ -24,7 +24,13 @@ export class UserService extends DataService {
 			if (existing) throw new Error(`Email '${validData.email}' already exists`);
 		}
 		if (action === 'CREATE' && !validData.password_hash) {
-			throw new Error('Password is required when creating a user');
+			if (validData.password) {
+				validData.password_hash = String(validData.password).trim();
+			} else if (validData.user_id) {
+				validData.password_hash = String(validData.user_id).trim().toLowerCase();
+			} else {
+				throw new Error('Password is required when creating a user');
+			}
 		}
 
 		// Enforce Lifecycle Workflow Security: prevent bypass of sensitive fields via generic CRUD update

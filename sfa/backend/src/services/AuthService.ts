@@ -47,9 +47,7 @@ export class AuthService {
       throw new Error('Invalid credentials');
     }
 
-    if (clientType === 'web-admin' && user.role !== 'OWNER' && user.role !== 'VP' && user.role !== 'ADMIN') {
-      throw new Error('Access Denied: Web Admin Portal is restricted to ADMIN and OWNER accounts only. Field representatives must use the SFA Mobile App.');
-    }
+
 
     if (deviceId) {
       if (!user.device_id) {

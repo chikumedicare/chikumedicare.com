@@ -4,7 +4,7 @@ import { UserRepository } from '../repositories/UserRepository';
 import { HierarchyService } from './HierarchyService';
 
 export class UserService extends DataService {
-	protected async preSaveCheck(env: Env, validData: any, existingData: any, id: string, action: 'CREATE' | 'UPDATE') {
+	protected async preSaveCheck(env: Env, validData: any, existingData: any, id: string, action: 'CREATE' | 'UPDATE', authUser?: AuthUser) {
 		const userRepo = new UserRepository(env);
 
 		if (validData.user_id && validData.user_id !== existingData?.user_id) {
@@ -35,22 +35,23 @@ export class UserService extends DataService {
 
 		// Enforce Lifecycle Workflow Security: prevent bypass of sensitive fields via generic CRUD update
 		if (action === 'UPDATE') {
-			if (validData.role && existingData?.role && validData.role !== existingData.role) {
+			const isSuperAdmin = authUser?.role === 'OWNER' || authUser?.role === 'ADMIN';
+			if (!isSuperAdmin && validData.role && existingData?.role && validData.role !== existingData.role) {
 				throw new Error('400 Bad Request: Direct role change via generic user update is prohibited. Use the formal Promotion/Demotion workflow (/api/users/:id/promote).');
 			}
-			if (validData.hq_id && existingData?.hq_id && validData.hq_id !== existingData.hq_id) {
+			if (!isSuperAdmin && validData.hq_id && existingData?.hq_id && validData.hq_id !== existingData.hq_id) {
 				throw new Error('400 Bad Request: Direct territory relocation via generic user update is prohibited. Use the formal Transfer workflow (/api/users/:id/transfer).');
 			}
-			if (validData.division_id && existingData?.division_id && validData.division_id !== existingData.division_id) {
+			if (!isSuperAdmin && validData.division_id && existingData?.division_id && validData.division_id !== existingData.division_id) {
 				throw new Error('400 Bad Request: Direct division relocation via generic user update is prohibited. Use the formal Transfer workflow (/api/users/:id/transfer).');
 			}
-			if (validData.reports_to_id !== undefined && existingData?.reports_to_id !== undefined && validData.reports_to_id !== existingData.reports_to_id) {
+			if (!isSuperAdmin && validData.reports_to_id !== undefined && existingData?.reports_to_id !== undefined && validData.reports_to_id !== existingData.reports_to_id) {
 				throw new Error('400 Bad Request: Direct manager modification via generic user update is prohibited. Reporting lines must be managed via Transfer/Promotion workflows.');
 			}
-			if (validData.status && existingData?.status && validData.status !== existingData.status) {
+			if (!isSuperAdmin && validData.status && existingData?.status && validData.status !== existingData.status) {
 				throw new Error('400 Bad Request: Direct user lifecycle status modification via generic user update is prohibited.');
 			}
-			if (validData.hierarchy_status && existingData?.hierarchy_status && validData.hierarchy_status !== existingData.hierarchy_status) {
+			if (!isSuperAdmin && validData.hierarchy_status && existingData?.hierarchy_status && validData.hierarchy_status !== existingData.hierarchy_status) {
 				throw new Error('400 Bad Request: Direct hierarchy status modification is prohibited. Hierarchy status is maintained automatically.');
 			}
 		}

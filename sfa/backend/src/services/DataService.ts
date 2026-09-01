@@ -67,7 +67,7 @@ export class DataService {
 		}
 		const validData = validation.data;
 
-		await this.preSaveCheck(env, validData, existingData, id, action);
+		await this.preSaveCheck(env, validData, existingData, id, action, authUser);
 
 		await generateEntityCode(env, this.collection, validData, action);
 
@@ -137,7 +137,7 @@ export class DataService {
 		return { id, ...validData };
 	}
 
-	protected async preSaveCheck(env: Env, validData: any, existingData: any, id: string, action: 'CREATE' | 'UPDATE') {}
+	protected async preSaveCheck(env: Env, validData: any, existingData: any, id: string, action: 'CREATE' | 'UPDATE', authUser?: AuthUser) {}
 
 	protected async hashPasswordIfNeeded(validData: any, existingData: any) {}
 

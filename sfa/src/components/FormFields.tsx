@@ -1,4 +1,5 @@
-﻿import React from 'react';
+import React from 'react';
+import { toTitleCase } from '../utils/textFormat';
 
 export const TextField = ({
   label,
@@ -7,6 +8,7 @@ export const TextField = ({
   placeholder,
   type = 'text',
   disabled = false,
+  autoCapitalizeWords = true,
 }: {
   label: string;
   value: string;
@@ -14,19 +16,36 @@ export const TextField = ({
   placeholder?: string;
   type?: string;
   disabled?: boolean;
-}) => (
-  <label>
-    {label}
-    <input
-      type={type}
-      value={value}
-      placeholder={placeholder}
-      disabled={disabled}
-      onChange={(e) => onChange?.(e.target.value)}
-      style={disabled ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' } : undefined}
-    />
-  </label>
-);
+  autoCapitalizeWords?: boolean;
+}) => {
+  const isExcludedType = ['email', 'password', 'number', 'date', 'time', 'datetime-local', 'url'].includes(type);
+  const shouldCapitalize = autoCapitalizeWords && !isExcludedType && type === 'text';
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let val = e.target.value;
+    if (shouldCapitalize) {
+      val = toTitleCase(val);
+    }
+    onChange?.(val);
+  };
+
+  return (
+    <label>
+      {label}
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        disabled={disabled}
+        onChange={handleChange}
+        style={{
+          ...(shouldCapitalize ? { textTransform: 'capitalize' } : {}),
+          ...(disabled ? { backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' } : {}),
+        }}
+      />
+    </label>
+  );
+};
 
 export const SelectField = ({
   label,

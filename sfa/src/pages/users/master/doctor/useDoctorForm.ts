@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Headquarter, Area, Beat } from '../../../../core/domain/hr/geography.types';
 import type { Doctor } from '../../../../core/domain/master/fieldMaster.types';
 import { getErrorMessage } from '../../../../utils/dataIntegrity';
+import { toTitleCase } from '../../../../utils/textFormat';
 import { SPECIALITY_OPTIONS } from './doctorConstants';
 
 interface UseDoctorFormProps {
@@ -22,22 +23,25 @@ export function useDoctorForm({
   onClose,
 }: UseDoctorFormProps) {
   // 1. Doctor Name & Gender
-  const [doctorName, setDoctorName] = useState(doctor?.doctorName || '');
+  const [doctorName, setDoctorNameRaw] = useState(doctor?.doctorName || '');
+  const setDoctorName = (v: string) => setDoctorNameRaw(toTitleCase(v));
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>(doctor?.gender || 'Male');
 
   // 2. Qualifications
   const initialQuals = doctor?.qualification ? doctor.qualification.split(',').map((q) => q.trim()) : ['MBBS'];
   const [selectedQualifications, setSelectedQualifications] = useState<string[]>(initialQuals);
-  const [otherQualification, setOtherQualification] = useState<string>('');
+  const [otherQualification, setOtherQualificationRaw] = useState<string>('');
+  const setOtherQualification = (v: string) => setOtherQualificationRaw(toTitleCase(v));
 
   // 3. Speciality
   const isInitialSpecialityOther = Boolean(doctor?.speciality && !SPECIALITY_OPTIONS.includes(doctor.speciality));
   const [speciality, setSpeciality] = useState<string>(
     isInitialSpecialityOther ? 'Other' : (doctor?.speciality || 'General Physician')
   );
-  const [otherSpeciality, setOtherSpeciality] = useState<string>(
+  const [otherSpeciality, setOtherSpecialityRaw] = useState<string>(
     isInitialSpecialityOther ? (doctor?.speciality || '') : (doctor?.otherSpeciality || '')
   );
+  const setOtherSpeciality = (v: string) => setOtherSpecialityRaw(toTitleCase(v));
 
   // 4. Doctor Class & Visits
   const [doctorClass, setDoctorClass] = useState<'A' | 'B' | 'C'>(
@@ -53,17 +57,23 @@ export function useDoctorForm({
   const [beatId, setBeatId] = useState(doctor?.beatId || filteredBeats[0]?.id || beats[0]?.id || '');
 
   // 6. Clinic Address
-  const [clinicAdd1, setClinicAdd1] = useState(doctor?.clinicAddressLine1 || doctor?.clinicAddress || '');
-  const [clinicAdd2, setClinicAdd2] = useState(doctor?.clinicAddressLine2 || '');
-  const [clinicCity, setClinicCity] = useState(doctor?.clinicCity || doctor?.city || 'Bhopal');
+  const [clinicAdd1, setClinicAdd1Raw] = useState(doctor?.clinicAddressLine1 || doctor?.clinicAddress || '');
+  const setClinicAdd1 = (v: string) => setClinicAdd1Raw(toTitleCase(v));
+  const [clinicAdd2, setClinicAdd2Raw] = useState(doctor?.clinicAddressLine2 || '');
+  const setClinicAdd2 = (v: string) => setClinicAdd2Raw(toTitleCase(v));
+  const [clinicCity, setClinicCityRaw] = useState(doctor?.clinicCity || doctor?.city || 'Bhopal');
+  const setClinicCity = (v: string) => setClinicCityRaw(toTitleCase(v));
   const [clinicPin, setClinicPin] = useState(doctor?.clinicPin || doctor?.pinCode || '');
   const [clinicState, setClinicState] = useState(doctor?.clinicState || doctor?.state || 'Madhya Pradesh');
 
   // 7. Permanent Address
   const [sameAsClinic, setSameAsClinic] = useState(false);
-  const [permAdd1, setPermAdd1] = useState(doctor?.permAddressLine1 || '');
-  const [permAdd2, setPermAdd2] = useState(doctor?.permAddressLine2 || '');
-  const [permCity, setPermCity] = useState(doctor?.permCity || 'Bhopal');
+  const [permAdd1, setPermAdd1Raw] = useState(doctor?.permAddressLine1 || '');
+  const setPermAdd1 = (v: string) => setPermAdd1Raw(toTitleCase(v));
+  const [permAdd2, setPermAdd2Raw] = useState(doctor?.permAddressLine2 || '');
+  const setPermAdd2 = (v: string) => setPermAdd2Raw(toTitleCase(v));
+  const [permCity, setPermCityRaw] = useState(doctor?.permCity || 'Bhopal');
+  const setPermCity = (v: string) => setPermCityRaw(toTitleCase(v));
   const [permPin, setPermPin] = useState(doctor?.permPin || '');
   const [permState, setPermState] = useState(doctor?.permState || 'Madhya Pradesh');
 
@@ -85,9 +95,9 @@ export function useDoctorForm({
   const handleSameAsClinicToggle = (checked: boolean) => {
     setSameAsClinic(checked);
     if (checked) {
-      setPermAdd1(clinicAdd1);
-      setPermAdd2(clinicAdd2);
-      setPermCity(clinicCity);
+      setPermAdd1Raw(clinicAdd1);
+      setPermAdd2Raw(clinicAdd2);
+      setPermCityRaw(clinicCity);
       setPermPin(clinicPin);
       setPermState(clinicState);
     }
@@ -122,19 +132,19 @@ export function useDoctorForm({
 
       const qualList = selectedQualifications.filter((q) => q !== 'Other');
       if (selectedQualifications.includes('Other') && otherQualification.trim()) {
-        qualList.push(otherQualification.trim());
+        qualList.push(toTitleCase(otherQualification.trim()));
       }
       const finalQualString = qualList.join(', ');
-      const finalSpecialityString = speciality === 'Other' ? otherSpeciality.trim() : speciality;
+      const finalSpecialityString = speciality === 'Other' ? toTitleCase(otherSpeciality.trim()) : speciality;
 
       const draft: Partial<Doctor> = {
         id: doctor?.id,
-        doctorName: doctorName.trim(),
+        doctorName: toTitleCase(doctorName.trim()),
         gender,
         qualification: finalQualString,
-        otherQualification: selectedQualifications.includes('Other') ? otherQualification.trim() : undefined,
+        otherQualification: selectedQualifications.includes('Other') ? toTitleCase(otherQualification.trim()) : undefined,
         speciality: finalSpecialityString,
-        otherSpeciality: speciality === 'Other' ? otherSpeciality.trim() : undefined,
+        otherSpeciality: speciality === 'Other' ? toTitleCase(otherSpeciality.trim()) : undefined,
         doctorClass,
         visitFrequency: visits,
         hqId,
@@ -143,18 +153,18 @@ export function useDoctorForm({
         areaName: (areaObj as any)?.name || (areaObj as any)?.area_name || '',
         beatId,
         beatName: (beatObj as any)?.name || (beatObj as any)?.beat_name || '',
-        clinicAddressLine1: clinicAdd1.trim(),
-        clinicAddressLine2: clinicAdd2.trim(),
-        clinicCity: clinicCity.trim(),
+        clinicAddressLine1: toTitleCase(clinicAdd1.trim()),
+        clinicAddressLine2: toTitleCase(clinicAdd2.trim()),
+        clinicCity: toTitleCase(clinicCity.trim()),
         clinicPin: clinicPin.trim(),
         clinicState,
-        clinicAddress: `${clinicAdd1} ${clinicAdd2}`.trim(),
-        city: clinicCity.trim(),
+        clinicAddress: toTitleCase(`${clinicAdd1} ${clinicAdd2}`.trim()),
+        city: toTitleCase(clinicCity.trim()),
         pinCode: clinicPin.trim(),
         state: clinicState,
-        permAddressLine1: permAdd1.trim(),
-        permAddressLine2: permAdd2.trim(),
-        permCity: permCity.trim(),
+        permAddressLine1: toTitleCase(permAdd1.trim()),
+        permAddressLine2: toTitleCase(permAdd2.trim()),
+        permCity: toTitleCase(permCity.trim()),
         permPin: permPin.trim(),
         permState,
         dob: dob || undefined,

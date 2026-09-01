@@ -277,3 +277,11 @@
   color: #475569;
   font-size: 9px;
 }
+
+/* Auto capitalize first letter of each word in text form fields */
+input[type="text"]:not(.no-capitalize):not(.uppercase),
+input:not([type]):not(.no-capitalize):not(.uppercase),
+textarea:not(.no-capitalize):not(.uppercase),
+.form-input:not([type="email"]):not([type="password"]):not(.no-capitalize):not(.uppercase) {
+  text-transform: capitalize;
+}

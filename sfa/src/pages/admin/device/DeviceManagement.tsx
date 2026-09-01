@@ -55,8 +55,6 @@ export function DeviceManagement({
   const unboundDevices = totalUsers - boundDevices;
   const lockedUsers = users.filter((u) => (u.failedLoginAttempts && u.failedLoginAttempts > 0) || !!u.lockedUntil).length;
 
-  const canResetDevice = (target: SfaUser): boolean => role === 'OWNER' || role === 'ADMIN';
-
   const handleOpenAudit = async (u: SfaUser) => {
     setSelectedUser(u);
     setAuditLoading(true);
@@ -84,9 +82,7 @@ export function DeviceManagement({
         if (res && res.success) {
           const u = resetTargetUser;
           setResetTargetUser(null);
-          setResetDoneMessage(
-            `Registered mobile device for "${u.fullName}" (${u.userId}) has been successfully unbound. The user can now log in and bind a new mobile handset on their next login.`
-          );
+          setResetDoneMessage(`Registered mobile device for "${u.fullName}" (${u.userId}) has been successfully unbound. The user can now log in on a new handset.`);
           await refreshHr(true);
         } else {
           alert(`Failed to reset device: ${res?.error || 'Unknown error'}`);
@@ -123,16 +119,7 @@ export function DeviceManagement({
   return (
     <div style={{ maxWidth: '100%', margin: '0 auto' }}>
       {/* Compact Header: Title + Inline Metrics */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '10px',
-          marginBottom: '10px',
-        }}
-      >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <span>📱</span>
@@ -160,29 +147,12 @@ export function DeviceManagement({
       </div>
 
       {/* Single-Row Search Toolbar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '8px 12px',
-          background: '#ffffff',
-          borderRadius: '10px',
-          border: '1px solid #e2e8f0',
-          marginBottom: '10px',
-        }}
-      >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
         <input
           placeholder="Search representative name, user ID, emp code, device model, or OS..."
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          style={{
-            flex: 1,
-            padding: '6px 12px',
-            borderRadius: '6px',
-            border: '1px solid #cbd5e1',
-            fontSize: '13px',
-          }}
+          style={{ flex: 1, padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
         />
       </div>
 
@@ -249,7 +219,7 @@ export function DeviceManagement({
                     </div>
                   </td>
                   <td style={{ padding: '8px 12px', textAlign: 'center' }}>
-                    <div style={{ display: 'inline-flex', gap: '6px' }}>
+                    <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center' }}>
                       <button
                         type="button"
                         onClick={() => handleOpenAudit(u)}
@@ -286,24 +256,23 @@ export function DeviceManagement({
                         </button>
                       )}
 
-                      {canResetDevice(u) && hasDevice && (
-                        <button
-                          type="button"
-                          onClick={() => setResetTargetUser(u)}
-                          style={{
-                            padding: '3px 8px',
-                            background: '#fef2f2',
-                            border: '1px solid #fecaca',
-                            borderRadius: '4px',
-                            fontWeight: 600,
-                            fontSize: '11.5px',
-                            cursor: 'pointer',
-                            color: '#dc2626',
-                          }}
-                        >
-                          📱 Reset
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => setResetTargetUser(u)}
+                        style={{
+                          padding: '3px 8px',
+                          background: hasDevice ? '#fef2f2' : '#f8fafc',
+                          border: `1px solid ${hasDevice ? '#fecaca' : '#e2e8f0'}`,
+                          borderRadius: '4px',
+                          fontWeight: 600,
+                          fontSize: '11.5px',
+                          cursor: 'pointer',
+                          color: hasDevice ? '#dc2626' : '#64748b',
+                        }}
+                        title="Reset registered device binding and active sessions"
+                      >
+                        📱 Reset Device
+                      </button>
                     </div>
                   </td>
                 </tr>

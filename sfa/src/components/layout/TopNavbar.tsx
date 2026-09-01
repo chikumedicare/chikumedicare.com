@@ -24,6 +24,8 @@ export function TopNavbar({
   hqName,
   reportingTo,
 }: TopNavbarProps) {
+  const initial = userName ? userName.trim().charAt(0).toUpperCase() : 'U';
+
   return (
     <header className="main-top-navbar">
       <div className="nav-left-brand-group">
@@ -47,7 +49,7 @@ export function TopNavbar({
           />
         </div>
 
-        {/* ☰ 3-Line Hamburger Menu Toggle (Clean White Icon, Transparent Background) */}
+        {/* ☰ 3-Line Hamburger Menu Toggle */}
         <button
           type="button"
           onClick={() => setMenuOpen(!menuOpen)}
@@ -81,20 +83,32 @@ export function TopNavbar({
           🟢 FY {activeFY} {isReadOnly ? '(Read-Only)' : ''}
         </span>
 
+        {/* Structured Executive Profile Card */}
         <div
-          className="direct-user-info"
+          className="nav-profile-card"
           onClick={() => open('my-profile')}
-          style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
-          title="View & Edit Profile"
+          title="Click to view & edit profile"
         >
-          <div className="user-top-row">
-            <strong className="user-name-title">{userName}</strong>
-            <span className="post-badge">{role}</span>
+          <div className="nav-avatar-circle">
+            {initial}
           </div>
-          <div className="user-bottom-row">
-            <span className="meta-info">📍 <strong>HQ:</strong> {hqName}</span>
-            <span className="meta-divider">•</span>
-            <span className="meta-info">👤 <strong>Reporting:</strong> {reportingTo}</span>
+
+          <div className="nav-user-details">
+            <div className="nav-user-top-row">
+              <span className="nav-user-name">{userName}</span>
+              <span className="nav-role-pill">{role}</span>
+            </div>
+            <div className="nav-user-meta-row">
+              <span className="nav-meta-item">
+                <span>📍</span>
+                <span><strong>HQ:</strong> {hqName}</span>
+              </span>
+              <span className="nav-meta-divider">•</span>
+              <span className="nav-meta-item">
+                <span>👤</span>
+                <span><strong>Reports to:</strong> {reportingTo}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>

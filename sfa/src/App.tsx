@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthSessionStore } from './store/hr/useAuthSessionStore';
+import { useGeographyStore } from './store/hr/useGeographyStore';
+import { useHrStore } from './store/hr/useHrStore';
 import { PageContentRouter } from './pages/PageContentRouter';
 import { Login } from './pages/shared/auth/Login';
 import { TopNavbar } from './components/layout/TopNavbar';
@@ -52,6 +54,9 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 
 export function App() {
   const { currentUser, role, loading, verifySession, logout, setAuthUser } = useAuthSessionStore();
+  const { hqs, refresh: refreshGeo } = useGeographyStore();
+  const { users, refresh: refreshHr } = useHrStore();
+
   const activeFY = '2026-27';
   const isReadOnly = false;
   const user = currentUser;
@@ -110,6 +115,13 @@ export function App() {
     initAuth();
   }, [verifySession]);
 
+  useEffect(() => {
+    if (logged) {
+      refreshGeo(true);
+      refreshHr(true);
+    }
+  }, [logged, refreshGeo, refreshHr]);
+
   const getModuleHierarchy = (p: Page) => {
     if (p === 'dashboard') return { category: 'Executive Workspace', categoryIcon: '📊', title: 'Dashboard' };
     if (p === 'my-profile') return { category: 'Personal Info', categoryIcon: '👤', title: 'Admin Profile' };
@@ -131,9 +143,26 @@ export function App() {
 
   const moduleInfo = getModuleHierarchy(page);
 
-  const userName = user?.fullName || (user as any)?.name || 'Executive Admin';
-  const hqName = user?.hqName || (user as any)?.hq_name || 'Corporate Super HQ';
-  const reportingTo = user?.reportingToName || (user as any)?.reportsToName || 'Managing Director';
+  const userName = user?.fullName || (user as any)?.name || (effectiveRole === 'OWNER' ? 'Ravishankar Amarghade' : 'Executive User');
+
+  const userHq = hqs.find((h) => h.id === user?.hqId || h.code === user?.hqId);
+  const resolvedHqName =
+    userHq?.name ||
+    user?.hqName ||
+    (effectiveRole === 'OWNER' || effectiveRole === 'ADMIN'
+      ? 'Head Office (Apex)'
+      : user?.hqId
+      ? user.hqId
+      : 'Unassigned HQ');
+
+  const userManager = users.find((u) => u.id === user?.reportsToId || u.userId === user?.reportsToId);
+  const resolvedReportingTo =
+    userManager?.fullName
+      ? `${userManager.fullName} (${userManager.role})`
+      : user?.reportingToName ||
+        (effectiveRole === 'OWNER' || effectiveRole === 'ADMIN'
+          ? 'Apex Governance Board'
+          : 'Apex Board (Owner & Admin)');
 
   if (loading) {
     return (
@@ -172,9 +201,9 @@ export function App() {
         activeFY={activeFY}
         isReadOnly={isReadOnly}
         userName={userName}
-        role={role}
-        hqName={hqName}
-        reportingTo={reportingTo}
+        role={effectiveRole}
+        hqName={resolvedHqName}
+        reportingTo={resolvedReportingTo}
       />
 
       <div className="app-body-container">

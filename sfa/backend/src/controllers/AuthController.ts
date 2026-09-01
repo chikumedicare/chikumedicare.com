@@ -38,7 +38,6 @@ export class AuthController {
       return new Response(JSON.stringify({ error: 'Invalid or expired session' }), { status: 401 });
     }
 
-    // Double check user in live D1 database
     const userRepo = new UserRepository(env);
     const liveUser: any = (await userRepo.findByUserId(authUser.userId || authUser.id)) || (await userRepo.findById(authUser.id));
 
@@ -46,7 +45,38 @@ export class AuthController {
       return new Response(JSON.stringify({ error: 'User account is inactive or no longer exists' }), { status: 401 });
     }
 
-    return new Response(JSON.stringify({ success: true, user: liveUser }), {
+    let hqName = '';
+    if (liveUser.hq_id) {
+      try {
+        const hqRow: any = await env.chikusfa_db
+          .prepare('SELECT name, hq_name FROM hqs WHERE id = ? OR hq_code = ? LIMIT 1')
+          .bind(liveUser.hq_id, liveUser.hq_id)
+          .first();
+        if (hqRow) hqName = hqRow.name || hqRow.hq_name || '';
+      } catch (e) {}
+    }
+
+    let reportingToName = '';
+    if (liveUser.reports_to_id) {
+      try {
+        const mgrRow: any = await env.chikusfa_db
+          .prepare('SELECT full_name, role FROM users WHERE id = ? OR user_id = ? LIMIT 1')
+          .bind(liveUser.reports_to_id, liveUser.reports_to_id)
+          .first();
+        if (mgrRow) reportingToName = `${mgrRow.full_name} (${mgrRow.role})`;
+      } catch (e) {}
+    }
+
+    const defaultHq = liveUser.role === 'OWNER' || liveUser.role === 'ADMIN' ? 'Head Office (Apex)' : (hqName || (liveUser.hq_id ? liveUser.hq_id : 'Unassigned HQ'));
+    const defaultReporting = liveUser.role === 'OWNER' || liveUser.role === 'ADMIN' ? 'Apex Board' : (reportingToName || 'Apex Board (Owner & Admin)');
+
+    const enrichedUser = {
+      ...liveUser,
+      hqName: defaultHq,
+      reportingToName: defaultReporting,
+    };
+
+    return new Response(JSON.stringify({ success: true, user: enrichedUser }), {
       headers: { 'Content-Type': 'application/json' },
     });
   }

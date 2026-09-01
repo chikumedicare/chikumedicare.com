@@ -40,7 +40,7 @@ export function DoctorFormModal(props: DoctorFormModalProps) {
         style={{
           background: '#ffffff',
           borderRadius: '20px',
-          maxWidth: '820px',
+          maxWidth: '840px',
           width: '100%',
           maxHeight: '92vh',
           display: 'flex',
@@ -70,7 +70,7 @@ export function DoctorFormModal(props: DoctorFormModalProps) {
                 {isEditing ? 'Edit Doctor Master Record' : 'Add New Medical Practitioner'}
               </h3>
               <small style={{ color: '#94a3b8', fontSize: '11.5px' }}>
-                Configure clinical qualifications, territory beat tagging and visitation metrics.
+                Configure clinical qualifications, medical registration number, territory beat tagging and visitation metrics.
               </small>
             </div>
           </div>
@@ -122,6 +122,8 @@ export function DoctorFormModal(props: DoctorFormModalProps) {
             <DoctorProfileSection
               doctorName={form.doctorName}
               setDoctorName={form.setDoctorName}
+              registrationNo={form.registrationNo}
+              setRegistrationNo={form.setRegistrationNo}
               gender={form.gender}
               setGender={form.setGender}
               selectedQualifications={form.selectedQualifications}

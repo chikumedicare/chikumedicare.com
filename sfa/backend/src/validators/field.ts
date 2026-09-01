@@ -4,6 +4,7 @@ import { baseEntity } from './base';
 export const DoctorSchema = baseEntity.extend({
   name: z.string().min(1),
   dr_code: z.string().optional().nullable(),
+  registration_no: z.string().optional().nullable(),
   qualification: z.string().optional().nullable(),
   speciality: z.string().optional().nullable(),
   category: z.string().optional().default('B'),

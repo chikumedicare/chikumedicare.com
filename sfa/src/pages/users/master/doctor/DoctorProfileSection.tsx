@@ -3,6 +3,8 @@ import React from 'react';
 interface DoctorProfileSectionProps {
   doctorName: string;
   setDoctorName: (v: string) => void;
+  registrationNo: string;
+  setRegistrationNo: (v: string) => void;
   gender: 'Male' | 'Female' | 'Other';
   setGender: (v: 'Male' | 'Female' | 'Other') => void;
   selectedQualifications: string[];
@@ -24,6 +26,8 @@ interface DoctorProfileSectionProps {
 export function DoctorProfileSection({
   doctorName,
   setDoctorName,
+  registrationNo,
+  setRegistrationNo,
   gender,
   setGender,
   selectedQualifications,
@@ -47,7 +51,8 @@ export function DoctorProfileSection({
         <span>👤</span> Basic Profile & Credentials
       </h4>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '14px', marginBottom: '14px' }}>
+      {/* Row 1: Doctor Name, Medical Registration No, Gender */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr', gap: '14px', marginBottom: '14px' }}>
         <div>
           <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
             Doctor Name *
@@ -60,6 +65,20 @@ export function DoctorProfileSection({
             onChange={(e) => setDoctorName(e.target.value)}
             required
             style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+            Registration No (MCI / State)
+          </label>
+          <input
+            type="text"
+            className="form-input uppercase"
+            placeholder="e.g. MP-45892 / MCI-12345"
+            value={registrationNo}
+            onChange={(e) => setRegistrationNo(e.target.value)}
+            style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', textTransform: 'uppercase' }}
           />
         </div>
 

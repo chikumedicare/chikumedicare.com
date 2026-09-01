@@ -30,6 +30,7 @@ export class CloudflareFieldMasterGateway implements IFieldMasterGateway {
     return (rows || []).map((r) => ({
       id: String(r.id),
       doctorCode: r.dr_code || r.doctorCode || '',
+      registrationNo: r.registration_no || r.registrationNo || '',
       doctorName: r.name || r.doctorName || '',
       qualification: r.qualification || '',
       speciality: r.speciality || 'General',
@@ -52,6 +53,7 @@ export class CloudflareFieldMasterGateway implements IFieldMasterGateway {
     const payload: Record<string, unknown> = {
       name: doc.doctorName || (doc as any).name || '',
       dr_code: doc.doctorCode || (doc as any).dr_code || undefined,
+      registration_no: doc.registrationNo || (doc as any).registration_no || null,
       qualification: doc.qualification || '',
       speciality: doc.speciality || 'General',
       category: doc.doctorClass || (doc as any).category || 'B',
@@ -77,6 +79,7 @@ export class CloudflareFieldMasterGateway implements IFieldMasterGateway {
     return {
       id: String(res?.id || doc.id || ''),
       doctorCode: res?.dr_code || doc.doctorCode || '',
+      registrationNo: res?.registration_no || doc.registrationNo || '',
       doctorName: res?.name || doc.doctorName || '',
       qualification: res?.qualification || doc.qualification || '',
       speciality: res?.speciality || doc.speciality || 'General',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Headquarter, Area, Beat } from '../../../../core/domain/hr/geography.types';
 import type { Doctor } from '../../../../core/domain/master/fieldMaster.types';
 import { getErrorMessage } from '../../../../utils/dataIntegrity';
@@ -22,9 +22,11 @@ export function useDoctorForm({
   onSave,
   onClose,
 }: UseDoctorFormProps) {
-  // 1. Doctor Name & Gender
+  // 1. Doctor Name, Reg No & Gender
   const [doctorName, setDoctorNameRaw] = useState(doctor?.doctorName || '');
   const setDoctorName = (v: string) => setDoctorNameRaw(toTitleCase(v));
+  const [registrationNo, setRegistrationNoRaw] = useState(doctor?.registrationNo || (doctor as any)?.registration_no || '');
+  const setRegistrationNo = (v: string) => setRegistrationNoRaw(v.toUpperCase());
   const [gender, setGender] = useState<'Male' | 'Female' | 'Other'>(doctor?.gender || 'Male');
 
   // 2. Qualifications
@@ -49,12 +51,50 @@ export function useDoctorForm({
   );
   const [visits, setVisits] = useState<number>(Number(doctor?.visitFrequency) || 2);
 
-  // 5. Territory & Geography
+  // 5. Territory & Field Geography Cascading
   const [hqId, setHqId] = useState(doctor?.hqId || hqs[0]?.id || '');
-  const filteredAreas = areas.filter((a) => !hqId || a.hqId === hqId || (a as any).hq_id === hqId);
-  const [areaId, setAreaId] = useState(doctor?.areaId || filteredAreas[0]?.id || areas[0]?.id || '');
-  const filteredBeats = beats.filter((b) => !areaId || b.areaId === areaId || (b as any).area_id === areaId);
-  const [beatId, setBeatId] = useState(doctor?.beatId || filteredBeats[0]?.id || beats[0]?.id || '');
+  const [areaId, setAreaId] = useState(doctor?.areaId || '');
+  const [beatId, setBeatId] = useState(doctor?.beatId || '');
+
+  useEffect(() => {
+    if (!hqId && hqs.length > 0) {
+      setHqId(hqs[0].id);
+    }
+  }, [hqs, hqId]);
+
+  const filteredAreas = areas.filter((a) => {
+    if (!hqId) return true;
+    const aHq = (a as any).hqId || (a as any).hq_id || (a as any).parentHqId;
+    return !aHq || aHq === hqId;
+  });
+
+  useEffect(() => {
+    if (filteredAreas.length > 0) {
+      const exists = filteredAreas.some((a) => a.id === areaId);
+      if (!exists) {
+        setAreaId(filteredAreas[0].id);
+      }
+    } else {
+      setAreaId('');
+    }
+  }, [hqId, filteredAreas, areaId]);
+
+  const filteredBeats = beats.filter((b) => {
+    if (!areaId) return true;
+    const bArea = (b as any).areaId || (b as any).area_id || (b as any).parentAreaId;
+    return !bArea || bArea === areaId;
+  });
+
+  useEffect(() => {
+    if (filteredBeats.length > 0) {
+      const exists = filteredBeats.some((b) => b.id === beatId);
+      if (!exists) {
+        setBeatId(filteredBeats[0].id);
+      }
+    } else {
+      setBeatId('');
+    }
+  }, [areaId, filteredBeats, beatId]);
 
   // 6. Clinic Address
   const [clinicAdd1, setClinicAdd1Raw] = useState(doctor?.clinicAddressLine1 || doctor?.clinicAddress || '');
@@ -140,6 +180,7 @@ export function useDoctorForm({
       const draft: Partial<Doctor> = {
         id: doctor?.id,
         doctorName: toTitleCase(doctorName.trim()),
+        registrationNo: registrationNo.trim() || undefined,
         gender,
         qualification: finalQualString,
         otherQualification: selectedQualifications.includes('Other') ? toTitleCase(otherQualification.trim()) : undefined,
@@ -149,9 +190,9 @@ export function useDoctorForm({
         visitFrequency: visits,
         hqId,
         hqName: (hqObj as any)?.name || (hqObj as any)?.hq_name || '',
-        areaId,
+        areaId: areaId || (areaObj as any)?.id || '',
         areaName: (areaObj as any)?.name || (areaObj as any)?.area_name || '',
-        beatId,
+        beatId: beatId || (beatObj as any)?.id || '',
         beatName: (beatObj as any)?.name || (beatObj as any)?.beat_name || '',
         clinicAddressLine1: toTitleCase(clinicAdd1.trim()),
         clinicAddressLine2: toTitleCase(clinicAdd2.trim()),
@@ -189,6 +230,7 @@ export function useDoctorForm({
 
   return {
     doctorName, setDoctorName,
+    registrationNo, setRegistrationNo,
     gender, setGender,
     selectedQualifications, toggleQualification,
     otherQualification, setOtherQualification,

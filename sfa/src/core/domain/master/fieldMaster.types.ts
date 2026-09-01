@@ -1,6 +1,7 @@
 export interface Doctor {
   id: string;
   doctorCode?: string;
+  registrationNo?: string;
   doctorName: string;
   gender?: 'Male' | 'Female' | 'Other';
   qualification?: string;

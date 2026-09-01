@@ -32,7 +32,7 @@ export function DoctorMasterTable({
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
         <thead>
           <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
-            <th style={{ padding: '8px 12px', fontWeight: 700 }}>Doctor Name & Code</th>
+            <th style={{ padding: '8px 12px', fontWeight: 700 }}>Doctor Name & Reg No</th>
             <th style={{ padding: '8px 12px', fontWeight: 700 }}>Speciality & Qual</th>
             <th style={{ padding: '8px 12px', fontWeight: 700 }}>Class</th>
             <th style={{ padding: '8px 12px', fontWeight: 700 }}>Base HQ & Area</th>
@@ -53,9 +53,16 @@ export function DoctorMasterTable({
             >
               <td style={{ padding: '8px 12px' }}>
                 <b style={{ color: '#0f172a' }}>{item.doctorName}</b>
-                <small style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>
-                  <code>{item.doctorCode || item.id}</code>
-                </small>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                  <small style={{ color: '#64748b', fontSize: '11px' }}>
+                    <code>{item.doctorCode || item.id}</code>
+                  </small>
+                  {item.registrationNo && (
+                    <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#0369a1', background: '#e0f2fe', padding: '1px 5px', borderRadius: '4px' }}>
+                      Reg: {item.registrationNo}
+                    </span>
+                  )}
+                </div>
               </td>
               <td style={{ padding: '8px 12px' }}>
                 <b style={{ color: '#0284c7' }}>{item.speciality || 'General'}</b>

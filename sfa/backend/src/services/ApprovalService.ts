@@ -22,6 +22,7 @@ export class ApprovalService {
 				const doctorPayload: any = {
 					name: entityData.name || entityData.doctorName || '',
 					dr_code: entityData.dr_code || entityData.doctorCode || undefined,
+					registration_no: entityData.registration_no || entityData.registrationNo || null,
 					qualification: entityData.qualification || '',
 					speciality: entityData.speciality || 'General',
 					category: entityData.category || entityData.doctorClass || 'B',

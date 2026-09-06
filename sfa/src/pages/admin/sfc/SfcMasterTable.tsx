@@ -48,11 +48,11 @@ export function SfcMasterTable({
               onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
             >
               <td style={{ padding: '8px 12px' }}>
-                <b style={{ color: '#0f172a' }}>{item.fromNodeName || item.fromHqName || item.fromNodeId}</b>
+                <b style={{ color: '#0f172a' }}>{item.fromNodeName || item.fromHqName || '-'}</b>
                 <small style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>{item.fromNodeType || 'Origin'}</small>
               </td>
               <td style={{ padding: '8px 12px' }}>
-                <b style={{ color: '#0284c7' }}>{item.toNodeName || item.toAreaName || item.toNodeId}</b>
+                <b style={{ color: '#0284c7' }}>{item.toNodeName || item.toAreaName || '-'}</b>
                 <small style={{ color: '#64748b', display: 'block', fontSize: '11px' }}>{item.toNodeType || 'Destination'}</small>
               </td>
               <td style={{ padding: '8px 12px' }}>

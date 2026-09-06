@@ -242,8 +242,8 @@ export function useGeographyStore() {
   const getHqName = useCallback(
     (id?: string) => {
       if (!id) return '-';
-      const found = hqs.find((h) => h.id === id);
-      return found?.name || found?.hq_name || id;
+      const found = hqs.find((h) => h.id === id || (h as any).hq_id === id);
+      return found?.name || found?.hq_name || (found?.code ? `HQ (${found.code})` : '-');
     },
     [hqs]
   );
@@ -251,8 +251,8 @@ export function useGeographyStore() {
   const getStateName = useCallback(
     (id?: string) => {
       if (!id) return '-';
-      const found = states.find((s) => s.id === id);
-      return found?.name || found?.state_name || id;
+      const found = states.find((s) => s.id === id || (s as any).state_id === id);
+      return found?.name || found?.state_name || (found?.code ? `State (${found.code})` : '-');
     },
     [states]
   );
@@ -260,10 +260,19 @@ export function useGeographyStore() {
   const getZoneName = useCallback(
     (id?: string) => {
       if (!id) return '-';
-      const found = zones.find((z) => z.id === id);
-      return found?.name || found?.zone_name || id;
+      const found = zones.find((z) => z.id === id || (z as any).zone_id === id);
+      return found?.name || found?.zone_name || (found?.code ? `Zone (${found.code})` : '-');
     },
     [zones]
+  );
+
+  const getAreaName = useCallback(
+    (id?: string) => {
+      if (!id) return '-';
+      const found = areas.find((a) => a.id === id || (a as any).area_id === id);
+      return found?.name || (found as any)?.area_name || (found?.code ? `Area (${found.code})` : '-');
+    },
+    [areas]
   );
 
   return {
@@ -285,5 +294,6 @@ export function useGeographyStore() {
     getHqName,
     getStateName,
     getZoneName,
+    getAreaName,
   };
 }

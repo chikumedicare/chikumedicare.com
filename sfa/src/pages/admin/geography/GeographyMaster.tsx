@@ -38,7 +38,7 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
 
   const {
     headOffices, zones, states, hqs, areas, beats,
-    getZoneName, getStateName, getHqName,
+    getZoneName, getStateName, getHqName, getAreaName,
     addOrUpdateHeadOffice, toggleHeadOfficeStatus,
     addOrUpdateTerritory, toggleTerritoryStatus,
   } = useGeographyStore();
@@ -53,7 +53,11 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
     if (tab !== 'HO' && activeDivisionId && (item as Zone).divisionId && (item as Zone).divisionId !== activeDivisionId) return false;
     const code = item.code || '';
     const name = item.name || '';
-    if (q && !code.toLowerCase().includes(q.toLowerCase()) && !name.toLowerCase().includes(q.toLowerCase())) return false;
+    const parentName = tab === 'Beat' ? getAreaName((item as Beat).areaId) :
+                       tab === 'Area' ? getHqName((item as Area).hqId) :
+                       tab === 'HQ' ? getStateName((item as Headquarter).stateId) :
+                       tab === 'State' ? getZoneName((item as State).zoneId) : '';
+    if (q && !code.toLowerCase().includes(q.toLowerCase()) && !name.toLowerCase().includes(q.toLowerCase()) && !parentName.toLowerCase().includes(q.toLowerCase())) return false;
 
     const isItemActive = tab === 'HO'
       ? Boolean((item as HeadOfficeRecord).is_active)
@@ -245,6 +249,7 @@ export function GeographyMaster({ onAddTerritory, onEditTerritory }: GeographyMa
         getZoneName={getZoneName}
         getStateName={getStateName}
         getHqName={getHqName}
+        getAreaName={getAreaName}
         onEdit={handleOpenEdit}
         onToggleStatus={handleToggleClick}
         onAdd={handleOpenAdd}

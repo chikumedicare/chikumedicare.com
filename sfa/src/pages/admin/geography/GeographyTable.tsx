@@ -12,6 +12,7 @@ interface GeographyTableProps {
   getZoneName: (id?: string) => string;
   getStateName: (id?: string) => string;
   getHqName: (id?: string) => string;
+  getAreaName?: (id?: string) => string;
   onEdit: (item: TerritoryItem) => void;
   onToggleStatus: (item: TerritoryItem) => void;
   onAdd: () => void;
@@ -23,6 +24,7 @@ export function GeographyTable({
   getZoneName,
   getStateName,
   getHqName,
+  getAreaName,
   onEdit,
   onToggleStatus,
   onAdd,
@@ -167,7 +169,7 @@ export function GeographyTable({
 
                   {tab === 'Beat' && (
                     <td style={{ padding: '10px 14px', color: '#475569' }}>
-                      {beatItem.areaId || '-'}
+                      {getAreaName ? getAreaName(beatItem.areaId) : '-'}
                     </td>
                   )}
                   {tab === 'Beat' && (

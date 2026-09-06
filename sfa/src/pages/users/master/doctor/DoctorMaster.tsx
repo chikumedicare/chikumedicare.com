@@ -95,13 +95,13 @@ export function DoctorMaster({
   };
 
   const getHqName = (hqId: string) => {
-    const h = hqs.find((item) => item.id === hqId);
-    return h ? (h.name || (h as any).hq_name) : hqId || '-';
+    const h = hqs.find((item) => item.id === hqId || (item as any).hq_id === hqId);
+    return h ? (h.name || (h as any).hq_name || (h.code ? `HQ (${h.code})` : '-')) : '-';
   };
 
   const getAreaName = (areaId: string) => {
-    const a = areas.find((item) => item.id === areaId);
-    return a ? (a.name || (a as any).area_name) : areaId || '-';
+    const a = areas.find((item) => item.id === areaId || (item as any).area_id === areaId);
+    return a ? (a.name || (a as any).area_name || (a.code ? `Area (${a.code})` : '-')) : '-';
   };
 
   const filtered = doctors.filter((d) => {

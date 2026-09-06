@@ -62,13 +62,13 @@ export function SfcFormModal({
   // Helper to get Node Name
   const getHqName = (id: string) => {
     if (id === 'super_hq') return 'Corporate HQ (Head Office)';
-    const h = hqs.find((item) => item.id === id);
-    return h ? (h.name || h.hq_name) : id;
+    const h = hqs.find((item) => item.id === id || (item as any).hq_id === id);
+    return h ? (h.name || (h as any).hq_name || (h.code ? `HQ (${h.code})` : '-')) : '-';
   };
 
   const getAreaName = (id: string) => {
-    const a = areas.find((item) => item.id === id);
-    return a ? (a.name || a.area_name) : id;
+    const a = areas.find((item) => item.id === id || (item as any).area_id === id);
+    return a ? (a.name || (a as any).area_name || (a.code ? `Area (${a.code})` : '-')) : '-';
   };
 
   // Google Maps Driving Distance Calculator (Works in both Add & Edit Mode)

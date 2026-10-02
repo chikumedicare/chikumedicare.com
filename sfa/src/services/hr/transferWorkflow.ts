@@ -24,7 +24,7 @@ export class TransferWorkflow {
       id: `audit_${Date.now()}`,
       type: 'TRANSFER',
       userId: user.id,
-      details: `Transferred ${user.fullName} from HQ [${prevHq}] to HQ [${newHqId}]`,
+      details: `Transferred ${user.fullName} to destination field assignment`,
       timestamp: new Date().toISOString(),
       performedBy,
     };

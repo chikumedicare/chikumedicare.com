@@ -40,9 +40,9 @@ export class CloudflareSfcGateway implements ISfcGateway {
     const calculatedFare = Number(draft.approvedFare) || Math.round(roundTrip * rate);
 
     const fromId = draft.fromNodeId || draft.fromHqId || '';
-    const fromName = draft.fromNodeName || draft.fromHqName || fromId;
+    const fromName = draft.fromNodeName || draft.fromHqName || 'Origin Node';
     const toId = draft.toNodeId || draft.toAreaId || '';
-    const toName = draft.toNodeName || draft.toAreaName || toId;
+    const toName = draft.toNodeName || draft.toAreaName || 'Destination Node';
 
     const payload: Record<string, unknown> = {
       from_node_type: draft.fromNodeType || 'HQ',

@@ -35,7 +35,7 @@ export function UserManagement({
       if (divisions.length > 0) return divisions[0].name;
       return 'Chiku Medicare';
     }
-    return divId;
+    return '-';
   };
 
   const validUsers = DataIntegrityGuard.verifyUserList(users);

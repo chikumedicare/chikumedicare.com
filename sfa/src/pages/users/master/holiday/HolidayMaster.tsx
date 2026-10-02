@@ -45,7 +45,7 @@ export function HolidayMaster({
       alert(`Previous Financial Year (${fyInfo.previousFY}) holidays are locked and cannot be deleted.`);
       return;
     }
-    if (!window.confirm(`Are you sure you want to delete Holiday: ${name || id}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete Holiday: ${name || 'Selected Holiday'}?`)) return;
     try {
       await GatewayContainer.getFieldMasterGateway().deleteHoliday(id);
       await refreshList();

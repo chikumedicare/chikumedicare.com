@@ -42,7 +42,7 @@ export function ProductMaster({
   }, [mode]);
 
   const handleDelete = async (id: string, name?: string) => {
-    if (!window.confirm(`Are you sure you want to delete Product: ${name || id}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete Product: ${name || 'Selected Product'}?`)) return;
     try {
       await GatewayContainer.getFieldMasterGateway().deleteProduct(id);
       await refreshList();
@@ -172,7 +172,7 @@ export function ProductMaster({
                         border: '1px solid #bbf7d0',
                       }}
                     >
-                      🏢 {item.divisionName || 'Main Division'}
+                      🏢 {divisions.find((d) => d.id === item.divisionId)?.name || item.divisionName || 'Main Division'}
                     </span>
                   </td>
                   <td>

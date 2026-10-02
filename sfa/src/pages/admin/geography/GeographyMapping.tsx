@@ -58,7 +58,7 @@ export function GeographyMapping({ users: propUsers, onManageCoverage }: Geograp
 
   const getDivisionName = (divId?: string) => {
     if (!divId) return '-';
-    return divisions.find((d) => d.id === divId)?.name || divId;
+    return divisions.find((d) => d.id === divId)?.name || '-';
   };
 
   const isFiltersActive =

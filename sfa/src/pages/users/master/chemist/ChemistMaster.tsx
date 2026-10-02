@@ -50,7 +50,7 @@ export function ChemistMaster({
   }, [mode]);
 
   const handleDelete = async (id: string, name?: string) => {
-    if (!window.confirm(`Are you sure you want to delete Chemist: ${name || id}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete Chemist: ${name || 'Selected Chemist'}?`)) return;
     try {
       await GatewayContainer.getFieldMasterGateway().deleteChemist(id);
       await refreshList();
@@ -150,8 +150,8 @@ export function ChemistMaster({
                   </td>
                   <td>{item.contactPerson || '-'}</td>
                   <td>
-                    <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.hqName || 'HQ'}</div>
-                    <small style={{ color: '#64748b' }}>{item.areaName || item.beatName || 'General Patch'}</small>
+                    <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.hqName || geoStore.getHqName(item.hqId) || 'HQ'}</div>
+                    <small style={{ color: '#64748b' }}>{item.areaName || geoStore.getAreaName(item.areaId) || item.beatName || 'General Patch'}</small>
                   </td>
                   <td>
                     <div>{item.addressLine1 || item.address || '-'}</div>

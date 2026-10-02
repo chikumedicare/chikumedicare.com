@@ -75,7 +75,7 @@ export function DoctorMaster({
   };
 
   const handleDelete = async (id: string, name?: string) => {
-    if (!window.confirm(`Are you sure you want to delete Doctor: ${name || id}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete Doctor: ${name || 'Selected Doctor'}?`)) return;
     try {
       const isApex = user?.role === 'ADMIN' || user?.role === 'OWNER';
       if (isApex) {
@@ -85,7 +85,7 @@ export function DoctorMaster({
         await GatewayContainer.getApprovalGateway().submitRequest({
           entityType: 'DR_DELETE',
           payload: { id, doctorName: name },
-          remarks: `Doctor Deletion Request for Dr. ${name || id}`,
+          remarks: `Doctor Deletion Request for Dr. ${name || 'Doctor'}`,
         });
         alert('🚀 Doctor Deletion Request submitted successfully for Manager / Admin Approval!');
       }

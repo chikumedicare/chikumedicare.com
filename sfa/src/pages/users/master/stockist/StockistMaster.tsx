@@ -48,7 +48,7 @@ export function StockistMaster({
   }, [mode]);
 
   const handleDelete = async (id: string, name?: string) => {
-    if (!window.confirm(`Are you sure you want to delete Stockist: ${name || id}?`)) return;
+    if (!window.confirm(`Are you sure you want to delete Stockist: ${name || 'Selected Stockist'}?`)) return;
     try {
       await GatewayContainer.getFieldMasterGateway().deleteStockist(id);
       await refreshList();
@@ -147,8 +147,8 @@ export function StockistMaster({
                   </td>
                   <td>{item.contactPerson || '-'}</td>
                   <td>
-                    <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.hqName || 'HQ'}</div>
-                    <small style={{ color: '#64748b' }}>{item.areaName || 'General Area'}</small>
+                    <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.hqName || geoStore.getHqName(item.hqId) || 'HQ'}</div>
+                    <small style={{ color: '#64748b' }}>{item.areaName || geoStore.getAreaName(item.areaId) || 'General Area'}</small>
                   </td>
                   <td>
                     <div>{item.addressLine1 || item.address || '-'}</div>

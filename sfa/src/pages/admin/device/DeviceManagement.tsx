@@ -45,7 +45,7 @@ export function DeviceManagement({
 
   const getDivisionName = (divId?: string) => {
     if (!divId) return '-';
-    return divisions.find((d) => d.id === divId)?.name || divId;
+    return divisions.find((d) => d.id === divId)?.name || '-';
   };
 
   const list = users.filter((u) => `${u.fullName} ${u.userId} ${u.empCode} ${u.deviceModel || ''} ${u.deviceName || ''} ${u.osVersion || ''}`.toLowerCase().includes(q.toLowerCase()));

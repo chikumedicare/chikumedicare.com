@@ -97,7 +97,7 @@ export function PromotionWorkflow({
 
   const getDivisionName = (divId?: string) => {
     if (!divId) return 'Main Division';
-    return divisions.find((d) => d.id === divId)?.name || divId;
+    return divisions.find((d) => d.id === divId)?.name || 'Main Division';
   };
 
   const handleValidateAndOpenConfirm = () => {
